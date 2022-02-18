@@ -6,21 +6,14 @@
 
 
 unsigned hex_read(char data_buf[]) {
-  unsigned length = read(stdin, data_buf, 16);
+  
   // if (length == 0) {
   //   // return error;
   // }
-  return length;
+  return read(STDIN_FILENO, data_buf, 16);
 }
 
-void hex_write_string(const char s[]) {
-    int length = write(1, s, strlen(s));
-    // if (length == 0) {
-    //   return;
-    // }
-}
-
-int strlen (const char s[]) {
+int string_len (const char s[]) {
   int count = 0; 
   char c;
   while (c != '\0') {
@@ -30,6 +23,15 @@ int strlen (const char s[]) {
   return count;
 }
 //strelen fucntion -- feed in pointer increment until hits null pointer 
+
+void hex_write_string(const char s[]) {
+    write(1, s, string_len(s));
+    // if (length == 0) {
+    //   return;
+    // }
+}
+
+
 
 void hex_format_offset(unsigned offset, char sbuf[]) {
   char* p = sbuf;

@@ -14,27 +14,27 @@ unsigned hex_read(char data_buf[]) {
 }
 
 //strlen function
-long string_len (const char s[]) {
-  long count = 0; 
-  char c;
-  while (c != '\0') {
-    c = s[count];
+int string_len (const char s[]) {
+ int count = 0;
+  while (*s != '\0') {
+    s++;
     count++;
+  }
+  if (count == 0) {
+    count = 16;
   }
   return count;
 }
 
 void hex_write_string(const char s[]) {
-  char str[string_len(s)];
-  int i = 0;
-  //check if printable if true adds to string to be writen out 
-  while (s[i] != '\0') {
+  unsigned int l = string_len(s);
+  char str[l];
+  for (int i = 0; i < l; i++) {
     str[i] = hex_to_printable(s[i]);
-    i++;
   }
-  str[i] = '\0';
-  
-  write(1, str, string_len(str));
+  //str[l] = '\0';
+  write(1, str, l);
+
 }
 
 
@@ -60,9 +60,11 @@ void hex_format_byte_as_hex(unsigned char byteval, char sbuf[]) {
 
 char hex_to_printable(unsigned char byteval) {
   //outside ascii printable range
-  if (byteval <  31  || byteval >  126  ) {
+  if (byteval <=  31  || byteval >=  126  ) {
     return '.';
   }
   return byteval;
 }
+
+
 

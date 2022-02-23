@@ -17,16 +17,37 @@ hex_format_byte_as_hex:
 	movq %rdi, %r8   // saves byteval in callee register -- source - destination
 	shrq $4, %r8 //bitwise shift over 4 
 	andq $0xF, %r8 // bitwise and 15 
-	leaq sHexidecimal, %r9 //save the string to r9
-	addq %r8, %r9 // move over r8 places in string and save in r9
-	movq %r9, %rsi // trying to add to first place in register 
-	andq $0xF, %rdi // and bitwise 
-	leaq sHexidecimal, %r10
-	addq %rdi, %r10 //shift over that amount of places and save in rdi 
+	cmp $9, %r8
+	jg .Lchar1
+	jmp .Lnum1
+
+.Lsecond: 
+	andq $0xF, %rdi // and bitwise
+	cmp $9, %rdi
+	jg .Lchar2
+	jmp .Lnum2
+.Lchar1: 
+	subq $10, %r8
+	addq $97, %r8 	
+	movq %r8, (%rsi)  
+	jmp .Lsecond
+.Lnum1:
+    addq $48, %r8 	 
+	movq %r8, (%rsi)  
+	jmp .Lsecond
+.Lchar2: 
+    subq $10, %rdi
+	addq $97, %rdi 
+	movq %rdi, 1(%rsi)
+	movq $0, 2(%rsi) // null pointer 
+	movq %rsi, %rax
+	addq $8, %rsp
+    ret 
+.Lnum2:
+    addq $48, %rdi 	 
+	movq %rdi, 1(%rsi)
 	incq %rsi // next spot in rsi 
-	movq (%r10), %rsi // trying to add to second place in register 
-	incq %rsi // next spot in rsi 
-	movq $0, %rsi // null pointer 
+	movq $0, 2(%rsi) // null pointer 
 	movq %rsi, %rax
 	addq $8, %rsp
     ret 
@@ -47,17 +68,6 @@ hex_to_printable:
 	movq %rdi, %rax //moving byteval into return register 
 	addq $8, %rsp
 	ret
-
-
-
-
-	
-
-
-
-
-
-
 
 	/* TODO: add functions here */
 

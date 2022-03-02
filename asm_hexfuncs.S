@@ -6,44 +6,68 @@
 
 	.section .text
 
+	.globl hex_write
+hex_write:
+	subq $8, %rsp  // stack pointer always has to be in intervals of 16 initialize as 8 so have to subtract
+	call strLen
+	movq %rax, %rdx
+	movq %rdi, %rsi
+	movq $1, %rdi
+	call write
+	addq $8, %rsp
+	ret
+	
 	.globl hex_read
-hex_read: 
-	read 
-    cmpq $0, %rax                 /* see if read failed */
-	jl .LreadError                /* handle read failure */
+hex_read:
+	subq $8, %rsp // stack pointer always has to be in intervals of 16 initialize as 8 so have to subtract
+	movq %rdi, %rsi
+	movq $0, %rdi
+	movq $16, %rdx
+	call read
+	movb $0, (%rsi, %rax)
+	addq $8, %rsp
+	ret
+	
 
 
-.LreadError:
-	/* error handling goes here */
+
 
 	.globl hex_format_offset
 hex_format_offset:
 	subq $8, %rsp // stack pointer always has to be in intervals of 16 initialize as 8 so have to subtract
-	movq %rdi, %r8   // saves offset in callee register -- source - destination
-	movq $28, %r9 //i = 28
+	movl %edi, %r10d   // saves offset in callee register -- source - destination
+	movl $28, %r11d //i = 28
+	movl $0, %r12d
 	jmp .Lloop
 .Lloop:
-	//shrq %r9, %r8 //bitwise shift over counter  
-	andq $0xF, %r8 // bitwise and 15 
-	cmp $9, %r8 //compare with 9 to check if hex num or char
-	jg .Lchar1 //if larger jump to first char
-	jmp .Lnum1 // else go to first num 
-
-
-
+	movl %r11d, %ecx //
+	shrl %cl, %r10d //bitwise shift over counter  have to use cl to do bitwise shi
+	andl $0xF, %r10d // bitwise and 15 
+	movl %r10d, %r8d
+	cmp $9, %r10d //compare with 9 to check if hex num or char
+	movl %edi, %r10d
+	jg .Lchar //if larger jump to first char
+	jmp .Lnum // else go to first num 
 .Lchar: 
-	subq $10, %r8 //convert to hex 
-	addq $97, %r8 //add a 
-	movq %r8, (%rsi)  // add to register
-	jmp .Lchecked  
+	subl $10, %r8d //convert to hex 
+	addl $97, %r8d //add a 
+	movb %r8b, (%rsi, %r12)   // add to register at spot from counter  ------how to do this 
+	jmp .Lfinal 
+	
 .Lnum:
-    addq $48, %r8 //add 0  	 
-	movq %r8, (%rsi)  // add to register 
-	jmp .Lchecked
-.Lchecked
-	subq $4, %r9 //decrease counter 
-	cmpq $0, %r9 //check if still greater than or equal to zero 
+    addl $48, %r8d //add 0  	 
+	movb %r8b, (%rsi, %r12)  // add to register 
+	jmp .Lfinal
+	
+.Lfinal:
+	subl $4, %r11d //decrease counter 
+	incl %r12d 
+	cmpl $0, %r11d //check if still greater than or equal to zero 
 	jge .Lloop 
+	movb $0, (%rsi, %r12) // add null pointer to next spot 
+	movq %rsi, %rax // move to return register 
+	addq $8, %rsp
+    ret 
 
 	.globl hex_format_byte_as_hex
 hex_format_byte_as_hex:
@@ -129,5 +153,7 @@ strLen:
 	addq $8, %rsp                 /* restore stack pointer */
 	ret
 
+/* vim:ft=gas:
+ */
 /* vim:ft=gas:
  */

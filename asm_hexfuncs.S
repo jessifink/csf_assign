@@ -2,17 +2,17 @@
 
 	.section .rodata
 	/* TODO: add read-only data such as strings here */
-
-
 	.section .text
 
-	.globl hex_write
-hex_write:
+	.globl hex_write_string
+hex_write_string:
 	subq $8, %rsp  // stack pointer always has to be in intervals of 16 initialize as 8 so have to subtract
-	call strLen
-	movq %rax, %rdx
-	movq %rdi, %rsi
-	movq $1, %rdi
+	movq %rdi, %r8 //save first parameter into r8
+	call strLen 
+	movq %rax, %rdx //return in third parameter for write
+.Ldone: 
+	movq %r8, %rsi //saved first paremter to second paremter in write  
+	movq $1, %rdi //write to standard out
 	call write
 	addq $8, %rsp
 	ret
@@ -20,16 +20,13 @@ hex_write:
 	.globl hex_read
 hex_read:
 	subq $8, %rsp // stack pointer always has to be in intervals of 16 initialize as 8 so have to subtract
-	movq %rdi, %rsi
+	movq %rdi, %rsi //second parameter into first 
 	movq $0, %rdi
 	movq $16, %rdx
 	call read
-	movb $0, (%rsi, %rax)
 	addq $8, %rsp
 	ret
 	
-
-
 
 
 	.globl hex_format_offset
@@ -37,10 +34,10 @@ hex_format_offset:
 	subq $8, %rsp // stack pointer always has to be in intervals of 16 initialize as 8 so have to subtract
 	movl %edi, %r10d   // saves offset in callee register -- source - destination
 	movl $28, %r11d //i = 28
-	movl $0, %r12d
+	movl $0, %r9d // for loop paramter 
 	jmp .Lloop
 .Lloop:
-	movl %r11d, %ecx //
+	movl %r11d, %ecx /
 	shrl %cl, %r10d //bitwise shift over counter  have to use cl to do bitwise shi
 	andl $0xF, %r10d // bitwise and 15 
 	movl %r10d, %r8d
@@ -51,20 +48,20 @@ hex_format_offset:
 .Lchar: 
 	subl $10, %r8d //convert to hex 
 	addl $97, %r8d //add a 
-	movb %r8b, (%rsi, %r12)   // add to register at spot from counter  ------how to do this 
+	movb %r8b, (%rsi, %r9)   // add to register at spot from counter  ------how to do this 
 	jmp .Lfinal 
 	
 .Lnum:
     addl $48, %r8d //add 0  	 
-	movb %r8b, (%rsi, %r12)  // add to register 
+	movb %r8b, (%rsi, %r9)  // add to register 
 	jmp .Lfinal
 	
 .Lfinal:
 	subl $4, %r11d //decrease counter 
-	incl %r12d 
+	incl %r9d 
 	cmpl $0, %r11d //check if still greater than or equal to zero 
 	jge .Lloop 
-	movb $0, (%rsi, %r12) // add null pointer to next spot 
+	movb $0, (%rsi, %r9) // add null pointer to next spot 
 	movq %rsi, %rax // move to return register 
 	addq $8, %rsp
     ret 
@@ -89,11 +86,11 @@ hex_format_byte_as_hex:
 .Lchar1: 
 	subq $10, %r8 //convert to hex 
 	addq $97, %r8 //add a 
-	movq %r8, (%rsi)  // add to register
+	movq %r8,0(%rsi)  // add to register
 	jmp .Lsecond  
 .Lnum1:
     addq $48, %r8 //add 0  	 
-	movq %r8, (%rsi)  // add to register 
+	movq %r8,0(%rsi)  // add to register 
 	jmp .Lsecond
 .Lchar2: 
     subq $10, %rdi 
@@ -114,17 +111,17 @@ hex_format_byte_as_hex:
 	.global hex_to_printable
 hex_to_printable:
     subq $8, %rsp // stack pointer always has to be in intervals of 16 initialize as 8 so have to subtract
-	cmp $31, %rdi //if statement compare
+	cmp $31, %dil //if statement compare
 	jl  .LoutRange //jumps if less than
-	cmp $126,%rdi
+	cmp $126,%dil
 	jg .LoutRange //jumps if greater than
 	jmp .LinRange 
 .LoutRange: 
-	movq $46, %rax //move period to return register 
+	movb $46, %al //move period to return register 
 	addq $8, %rsp // readjust 
 	ret
 .LinRange:
-	movq %rdi, %rax //moving byteval into return register 
+	movb %dil, %al //moving byteval into return register 
 	addq $8, %rsp //readjust 
 	ret
 /*
@@ -153,7 +150,5 @@ strLen:
 	addq $8, %rsp                 /* restore stack pointer */
 	ret
 
-/* vim:ft=gas:
- */
 /* vim:ft=gas:
  */

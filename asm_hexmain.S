@@ -1,4 +1,5 @@
-/* Hexdump main function, assembly language version */
+/* Hexdump main
+ function, assembly language version */
 
 /*                                                                                                                                                                                                        
  * Notes:                                                                                                                                                                                                 
@@ -6,10 +7,12 @@
  * Subroutine arguments:  rdi, rsi, rdx, rcx, r8, r9                                                                                                                                                      
 	*/
 	.section .rodata
-sColon: .string ": "
+sColon: .string ":"
 sSpace: .string " "
 s2Space: .string "  "
 s3Space: .string "   "
+s4Space: .string "    "
+sTestMsg: .string "FOR TESTING"
 sNull: .string  "\0"
 sNewLine: .string "\n"
 
@@ -39,21 +42,15 @@ main:
     movq $0, %r14 /*initialize tracker to zero*/
 	jmp .LEnter
 .LEnter:
-//    movq $0, %r15 /*set first index of array to null char*/
-	//leaq (input,%r12,1), %r15
 	movq $input, %r15
 	movq %r15, %rdi
-	//movq $input, %r15
-	//mocq %r15, %rdi /*store base adress of array*/
-	// movq %r15, %rdi /*move array into register as parameter*/
 	call hex_read /*call hex_read */
-	//movq %rdi, %r15 /*store input array into %r15 register*/
-    movq %rax, %r13 /*store length returned by hex_read in register*/
-    jmp .LMainLoop
+	movq %rax, %r13 /*store length returned by hex_read in register*/
+	jmp .LMainLoop
 .LMainLoop:
     cmp   $0, %r13
     jle .LEnd //see if reads in 0 --reads in the first 16 chars if nothing then skips to end other wise goes through and checks this again at end of full cycle
-    movb $0, (%r15,%r13) //input length is null pointer 
+    movb $0, (%r13,%r15) //input length is null pointer 
     movq %r12, %rdi /*move count into parameter 1*/
     movq $outputted, %r8 //move the space into register
     movq %r8, %rsi //makes outputted the buffer that goes into hex_format_offset
@@ -65,14 +62,12 @@ main:
     movq $0, %r10 /*count var for loop */
     jmp .LWriteNums 
 
-.LWriteNums:
-	//	HELP R10 IS CHANGING WHEN CALLING HEXWRITESTRING AND HEX FORMAT SO NOT ABLE TO LOOP PROPERLY 
-	//pushq %r10 
+.LWriteNums: 
 	cmp %r10, %r13 /*if length <= i MIGHT HAVE TO HAVE POPPER R13*/
 	jle  .LNext /*leave loop*/
 	pushq %r10
 	movq $sSpace, %rdi
-    call hex_write_string /*hex_write(" ")*/
+	call hex_write_string /*hex_write(" ")*/
 	popq %r10
 	movb (%r15,%r10),%dil /*input[i] as first param*/
 	movq $outputted, %r9
@@ -85,9 +80,8 @@ main:
 	push %r10
 	call hex_write_string
 	pop %r10
-	incq %r10 //increase 
-    //movq %r13, %r14 
-    jmp .LWriteNums
+	incq %r10 //increase
+	jmp .LWriteNums
 
 .LNext:
 //ADD THE CORRECT AMOUNT OF SPACES	
@@ -97,7 +91,7 @@ main:
 .LPrintSpaces:
         cmp $16, %r10 /*while length < 16*/
         jge .LPrintInput /*CHANGE THIS*/
-	movq $s2Space, %rdi
+	movq $s3Space, %rdi
 	pushq %r10 /*push onto stack before function call*/
 	call hex_write_string
 	popq %r10 /*pop off stack*/
@@ -106,14 +100,19 @@ main:
 
 .LPrintInput:
 	movq $0, %r10 /*store index for loop in %r10*/
+	movq $s2Space, %rdi
+	push %r10
+	call hex_write_string
+	pop %r10
 	jmp .LPrintInputLoop
 	
 .LPrintInputLoop:
-	cmp $0, %r13 /*if length >= i, end*/
+	cmp %r13, %r10 /*if index >= length, end*/
 	jge .LLast //exit
 	movq $charBuf, %r8 /*to store char buffer*/
 	movq (%r15, %r10), %r9 /*input[i] into %r8*/
 	movq %r9, %rdi
+	//movq $, %rdi /*FOR TESTING DELETE THIS*/
 	call hex_to_printable
 	movq %rax, 0(%r8)
 	movq $0, 1(%r8) /* '/0' into cbuf[1] */
@@ -121,6 +120,7 @@ main:
 	pushq %r10
 	call hex_write_string
 	popq %r10
+	incq %r10
 	jmp .LPrintInputLoop
 
 	
@@ -132,23 +132,7 @@ main:
     movq $sNewLine, %rdi
 	call hex_write_string
 	jmp .LEnter
-	//position
-//	jmp .LEnter
-   // jmp .LPrintInput
-/*.LPrintInput:	
-    cmp %r9, %r14 //i< length stay in loop 14 - i 9 - length 
-    jge .LEnter
-    movq $charBuf, %rbx
-    movb (%r15, %r14), %r11b // move string at counter into r13 
-	movb %r11b, %dil
-	//movq $0, %rax //idk
-	call hex_to_printable //check that that charecter is printable
-	movb %al,0(%rbx) // move that charecter into r11 
-    movb $0, 1(%rbx) 
-    movq %rbx, %rdi 
-    call hex_write_string
-    jmp .LPrintInput
-  */  
+	
 .LEnd:
     movq $0, %rax
     popq %r15

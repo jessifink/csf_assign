@@ -4,8 +4,8 @@
  * Notes:                                                                                                                                                                                                 
  * Callee-saved registers: rbx, rbp, r12-r15                                                                                                                                                              
  * Subroutine arguments:  rdi, rsi, rdx, rcx, r8, r9                                                                                                                                                      
- */
-    .section .rodata
+	*/
+	.section .rodata
 sColon: .string ": "
 sSpace: .string " "
 s2Space: .string "  "
@@ -15,13 +15,13 @@ sNewLine: .string "\n"
 
     .section .bss
     .align 8
-    input: .space 17 
-    offset: .space  9
-    outputted: .space 17
-    charBuf: .space 2
+input: .space 17 
+offset: .space  9
+outputted: .space 17
+charBuf: .space 2
 
 
-.section .text
+	.section .text
 
     .globl main
 main:
@@ -40,13 +40,17 @@ main:
 	jmp .LEnter
 .LEnter:
 //    movq $0, %r15 /*set first index of array to null char*/
-    movq $input, %rdi /*store base adress of array*/
-   // movq %r15, %rdi /*move array into register as parameter*/
-	call hex_read /*call hex_read */
+	//leaq (input,%r12,1), %r15
 	movq $input, %r15
+	movq %r15, %rdi
+	//movq $input, %r15
+	//mocq %r15, %rdi /*store base adress of array*/
+	// movq %r15, %rdi /*move array into register as parameter*/
+	call hex_read /*call hex_read */
+	//movq %rdi, %r15 /*store input array into %r15 register*/
     movq %rax, %r13 /*store length returned by hex_read in register*/
-    jmp .LmainLoop
-.LmainLoop:
+    jmp .LMainLoop
+.LMainLoop:
     cmp   $0, %r13
     jle .LEnd //see if reads in 0 --reads in the first 16 chars if nothing then skips to end other wise goes through and checks this again at end of full cycle
     movb $0, (%r15,%r13) //input length is null pointer 
@@ -61,41 +65,74 @@ main:
     movq $0, %r10 /*count var for loop */
     jmp .LWriteNums 
 
-	.LWriteNums:
+.LWriteNums:
 	//	HELP R10 IS CHANGING WHEN CALLING HEXWRITESTRING AND HEX FORMAT SO NOT ABLE TO LOOP PROPERLY 
-	//pushq %r10
-	incq %r10 //increase 
-    cmp %r10, %r13 /*if length <= i MIGHT HAVE TO HAVE POPPER R13*/
-    jle  .LNext /*leave loop*/
-    movq $sSpace, %rdi
+	//pushq %r10 
+	cmp %r10, %r13 /*if length <= i MIGHT HAVE TO HAVE POPPER R13*/
+	jle  .LNext /*leave loop*/
+	pushq %r10
+	movq $sSpace, %rdi
     call hex_write_string /*hex_write(" ")*/
-  //  popq %r10
+	popq %r10
 	movb (%r15,%r10),%dil /*input[i] as first param*/
 	movq $outputted, %r9
 	movq %r9,%rsi /*output as second param*/
-//	push %r10
+	push %r10
 	call hex_format_byte_as_hex
-//	pop %r10
-    movq %rax, %r9  
-    movq %r9, %rdi
+	pop %r10
+	movq %rax, %r9  
+	movq %r9, %rdi
+	push %r10
 	call hex_write_string
-    movq %r13, %r14 /*store length in %r9 IS THIS ALLOWED*/
+	pop %r10
+	incq %r10 //increase 
+    //movq %r13, %r14 
     jmp .LWriteNums
+
 .LNext:
 //ADD THE CORRECT AMOUNT OF SPACES	
-    cmp $16, %r13 /*if length < 16*/
-    jge .LLast /*CHANGE THIS*/
-    movq $s2Space, %rdi
-    call hex_write_string
-    incq %r13
-    jmp .LNext
+	movq %r13, %r10	/*store length in counter in r10 register*/
+	jmp .LPrintSpaces
+
+.LPrintSpaces:
+        cmp $16, %r10 /*while length < 16*/
+        jge .LPrintInput /*CHANGE THIS*/
+	movq $s2Space, %rdi
+	pushq %r10 /*push onto stack before function call*/
+	call hex_write_string
+	popq %r10 /*pop off stack*/
+	incq %r10
+	jmp .LPrintSpaces
+
+.LPrintInput:
+	movq $0, %r10 /*store index for loop in %r10*/
+	jmp .LPrintInputLoop
+	
+.LPrintInputLoop:
+	cmp $0, %r13 /*if length >= i, end*/
+	jge .LLast //exit
+	movq $charBuf, %r8 /*to store char buffer*/
+	movq (%r15, %r10), %r9 /*input[i] into %r8*/
+	movq %r9, %rdi
+	call hex_to_printable
+	movq %rax, 0(%r8)
+	movq $0, 1(%r8) /* '/0' into cbuf[1] */
+	movq %r8, %rdi
+	pushq %r10
+	call hex_write_string
+	popq %r10
+	jmp .LPrintInputLoop
+
+	
 .LLast:
-    movq $s2Space, %rdi
+	//jmp .LEnd /*FOR TESTING GET RID OF THIS LATER*/
+	movq $s2Space, %rdi
     call hex_write_string
     addq $16, %r12 /*increment count*/
     movq $sNewLine, %rdi
-    call hex_write_string
-	movq $0, %r14 //position
+	call hex_write_string
+	jmp .LEnter
+	//position
 //	jmp .LEnter
    // jmp .LPrintInput
 /*.LPrintInput:	

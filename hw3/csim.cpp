@@ -98,6 +98,16 @@ string hexToBinary(char c) {
         default: return "1111";
     }
 }
+bool checkTag(string readOrWrite, string tag, Chache cache) {
+    // iterate through all of the cache check to see if the tag matches anything already in cache 
+    //if isLRU load: then move to front 
+    //store create new block with dirty bit set to true, and move to front and delete old block
+}
+
+void handleStore(string tag, bool found, Cache cache) {
+    totalStores++;
+    
+}
 
 
 
@@ -127,7 +137,6 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     bytes = std::stoi(argv[3]);
-
     string input = argv[4];
     string cmp = "write-allocate";
     if (input == cmp) {
@@ -146,13 +155,11 @@ int main(int argc, char *argv[]) {
     input = argv[7];
     file_name = input;
 
-    
     int offsetBits = bitCount(blocks);
     int indexBits = bitCount(sets);
     int tagBits = 32 - (offsetBits + indexBits);
     //address = address >> offsetBits;
     index = address % sets;
-
     Cache *cache = new Cache();
     string line;
     while (getline(cin, line)) { 
@@ -161,13 +168,13 @@ int main(int argc, char *argv[]) {
         for (int i = 0; i < 4; i++) {
             memAddress += hexToBinary(memAddress[i]);
         }
-        //memAddress = memAddress >> offsetBits;
+        memAddress = std::stoi(memAddress) >> offsetBits;
         string tag = memAddress.substr(0,tagBits);
         string index = memAddress.substr(tagBits, indexBits);
+        bool found = checkTag(readOrWrite,tag, cache); 
+        handleStore(tag, found,cache);
 
-
+        
     }
-
-
     return 0;
 }

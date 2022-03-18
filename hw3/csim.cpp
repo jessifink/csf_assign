@@ -3,13 +3,13 @@
 #include <string>
 #include <set>
 #include <vector>
-#include "block.h"
+//#include "block.h"
 using namespace std;
 
 
 struct Slot {
-    unsigned tag;
-    bool valid;
+    unsigned int tag;
+    bool valid = false; //valid means "empty" if valid, slot holds information. if invalid, no info
     unsigned loadTime;
     unsigned accessTime;
     bool dirty;
@@ -21,10 +21,10 @@ struct Cache {
     vector <Set> sets;
     int numSets;
     int numBlocks;
-    int numBites;
+    int numBytes;
     int slotsPerSet;
     bool wa;
-    bool wt;
+    bool wt = false;
     bool isLru;
     int loadHits = 0;
     int loadMisses = 0;
@@ -34,6 +34,7 @@ struct Cache {
     int totalStores = 0;
     int totalCycles = 0;
     int currentTime;
+
 };
 
 
@@ -49,6 +50,16 @@ int bitCount(int num) {
     }
     return count;
 }
+void print(int loads, int stores, int loadHits, int loadMiss, int storeHit, int storeMiss, int totalCycles) {
+    cout << "Total loads: " << loads << "\n";
+    cout << "Total stores: " << stores << "\n";
+    cout << "Load hits: " << loadHits << "\n";
+    cout << "Load misses: " << loadMiss << "\n";
+    cout << "Store hits: " << storeHit << "\n";
+    cout << "Store misses: " << storeMiss << "\n";
+    cout << "Total cycles: " << totalCycles << "\n";
+}
+        
 //direct map - split middle adress into three parts index points to particular set in cache block is the contetent need to compare tag for every set number / index use tag/ first aprt of memory adress to compare to the tag part in the set if match stores content you want hit if matches 
 //ignore offset
 //allocate 
@@ -98,83 +109,196 @@ string hexToBinary(char c) {
         default: return "1111";
     }
 }
-bool checkTag(string readOrWrite, string tag, Chache cache) {
-    // iterate through all of the cache check to see if the tag matches anything already in cache 
-    //if isLRU load: then move to front 
-    //store create new block with dirty bit set to true, and move to front and delete old block
+
+
+bool found(Cache * c, unsigned int tag, unsigned int index, bool wt, bool isLru) {
+    if (c->sets.empty()) {
+        return false;
+    }
+    vector<Slot>::iterator it;
+    for (it = c->sets.at(index).blocks.begin(); it != c->sets.at(index).blocks.end(); ++it) {
+        if ((*it).tag == tag) {
+            if (isLru) {
+                //takes the slot with the correct tag and moves it to front 
+                c->sets.at(index).blocks.insert(c->sets.at(index).blocks.begin(), *it);
+                //erases the old slot
+                c->sets.at(index).blocks.erase(it);
+            }
+            if (wt == true) {
+                (*it).dirty = true;
+            }
+            return true;
+        }
+    }
+    return false;
 }
 
-void handleStore(string tag, bool found, Cache cache) {
-    totalStores++;
-    
+bool found(Cache * c, unsigned int tag, unsigned int index, bool isLru) {
+    if (c->sets.empty()) {
+        return false;
+    }
+    vector<Slot>::iterator it;
+    for (it = c->sets.at(index).blocks.begin(); it != c->sets.at(index).blocks.end(); ++it) {
+        if ((*it).tag == tag) {
+            if (isLru) {
+                //takes the slot with the correct tag and moves it to front 
+                c->sets.at(index).blocks.insert(c->sets.at(index).blocks.begin(), *it);
+                //erases the old slot
+                c->sets.at(index).blocks.erase(it);
+            }
+            return true;
+        }
+    }
+    return false;
 }
-
 
 
 int main(int argc, char *argv[]) {
     int sets = 0;
     int blocks = 0;
-    int index;
     int bytes = 0;
-    bool wa = false;
-    bool wt = false;
-    bool isLru = false;
-    string file_name = "";
+    bool hit = false;
+    bool isLru = false; 
     unsigned int address;
-    char lors;
-    if (argc != 8) { //check for valid number of arguments
-        std::cerr << "error\n"; 
+    string readOrWrite;
+    Cache *cache = new Cache();
+
+    if (argc != 7) { //check for valid number of arguments
+        std::cerr << "error: invalid number of arguments\n"; 
         return 1;
     }
-    sets = std::stoi(argv[1]);
-    blocks = std::stoi(argv[2]);
+    string setString = argv[1];
+    string blockString = argv[2];
+    sets = std::stoi(setString);
+    blocks = std::stoi(blockString);
     if (blocks < 4) {
-        std::cerr <<  "error\n";
+        std::cerr <<  "error: invalid block size\n";
         return 1;
     }
     if (!powerOfTwo(blocks) || !powerOfTwo(sets)) {
-        std::cerr <<  "error\n";
+        std::cerr <<  "error: not power of two\n";
         return 1;
     }
-    bytes = std::stoi(argv[3]);
+    string byteString = argv[3];
+    bytes = std::stoi(byteString);
     string input = argv[4];
-    string cmp = "write-allocate";
-    if (input == cmp) {
-        wa == true;
+    if (input.compare("write-allocate") == 0) {
+        cache->wa = true;
     }
     input = argv[5];
-    cmp = "write-through";
-    if (input == cmp) {
-        wt == true;
+    if (input.compare("write-through") == 0) {
+        cache->wt = true;
     }
     input = argv[6];
-    cmp = "lru";
-    if (input == cmp) {
-        isLru = true;
+    if (input.compare("lru") == 0) {
+        cache->isLru = true;
     }
-    input = argv[7];
-    file_name = input;
 
     int offsetBits = bitCount(blocks);
     int indexBits = bitCount(sets);
     int tagBits = 32 - (offsetBits + indexBits);
     //address = address >> offsetBits;
-    index = address % sets;
-    Cache *cache = new Cache();
+    
+    
     string line;
-    while (getline(cin, line)) { 
-        string readOrWrite = line.substr(0, 1);
-        string memAddress = line.substr(4, 8);
-        for (int i = 0; i < 4; i++) {
-            memAddress += hexToBinary(memAddress[i]);
-        }
-        memAddress = std::stoi(memAddress) >> offsetBits;
-        string tag = memAddress.substr(0,tagBits);
-        string index = memAddress.substr(tagBits, indexBits);
-        bool found = checkTag(readOrWrite,tag, cache); 
-        handleStore(tag, found,cache);
+    //long address;
+    
+    while (cin >> readOrWrite) { 
+        //cin >> readOrWrite;
+        cin >> std::hex >> address;
+        //string memAddressString;
+        //cin >> memAddressString;
+        string extra;
+        cin >> extra;
 
+
+        // for (int i = 0; i < 4; i++) {
+        //     memAddressString += hexToBinary(memAddressString[i]);
+        // }
+        //string readOrWrite = line.substr(0, 1);
+        //string memAddress = line.substr(4, 8);
+        //int memAddress = std::stoi(memAddressString) >> offsetBits;
+        //long memAddress = address >> offsetBits;
+        //string memAddressString = to_string(memAddress);
+       // string tag = memAddressString.substr(0,tagBits);
+       long offset = ((1 << offsetBits) - 1) & address;
+       long i = ((1 << indexBits) - 1) & (address >> offsetBits);
+       long t = ((1 << tagBits) - 1) & (address >> (32 - tagBits));
+
+       // unsigned int t = stoi(tag);
+       // string index = memAddressString.substr(tagBits, indexBits);
+        //int i = stoi(index);
+        vector<Slot>::iterator it;
         
+        if (readOrWrite.compare("l") == 0) {
+            (cache->totalLoads)++;
+            //vector<slot> slots = cache->sets.at(index);
+            if (cache->sets.at(i).blocks.empty()) { //check if cache at index is empty
+                hit = false;
+                Slot * s = new Slot();
+                    s->dirty = false;
+                    s->tag = t;
+                    s->valid = true;
+                    //add to beginning of set blocks
+                    Slot old = cache->sets.at(i).blocks.back();
+                    cache->sets.at(i).blocks.pop_back();
+                    cache->sets.at(i).blocks.insert(cache->sets.at(i).blocks.begin(), *s);
+            } else {
+                if (found(cache, t, i, isLru)) {
+                    hit = true;
+                    (cache->loadHits)++;
+                    (cache->totalCycles)++;
+                }
+            }
+            
+        hit = false;
+        (cache->loadMisses)++; 
+        cache->totalCycles += cache->numBytes / 4 * 100;
+        //rearrange cache
+        }
+        if (readOrWrite.compare("s") == 0) {  
+            (cache->totalStores)++;
+//cache->sets.at(i).blocks.empty() ||
+            if (!(found(cache, t, i, isLru))) {
+                //hit = false;
+                (cache->storeMisses)++;
+                if (cache->wt == false) {
+                    cache->totalCycles += 100;
+                } 
+                if (cache->wa == true) {
+                    Slot * s = new Slot();
+                    s->dirty = true;
+                    s->tag = t;
+                    s->valid = true;
+                    //add to beginning of set blocks
+                    struct Slot old; 
+                    if (!cache->sets.empty()) {
+                        old = cache->sets.at(i).blocks.back();
+                        cache->sets.at(i).blocks.pop_back();
+                    }
+                    cache->sets.at(i).blocks.insert(cache->sets.at(i).blocks.begin(), *s);
+
+                    //cache->sets.at(stoi(index)).blocks.erase(cache->sets.at(stoi(index)).blocks.end());
+                    //remove last
+                    //add to front 
+                    (cache->totalCycles) += 100 * cache->numBytes / 4;
+                    (cache->totalCycles)++;
+                    if (cache->wt && old.dirty) {
+                        (cache->totalCycles) += 100 * cache->numBytes / 4;
+                    } else if (!cache->wt){
+                        (cache->totalCycles) += 0; 
+                    }
+                }
+            } else if (found(cache, t, i, cache->wt)) { 
+                (cache->storeHits)++;
+                if (cache->wt) {
+                    (cache->totalCycles) += 100;
+                }
+
+            }
+        }    
     }
+    print(cache->totalLoads, cache->totalStores, cache->loadHits, cache->loadMisses, cache->storeHits, cache->storeMisses, cache->totalCycles);
+        
     return 0;
 }

@@ -18,14 +18,14 @@ struct Set {
     vector <Slot> blocks;
 };
 struct Cache {
-    vector <Set> sets;
-    int numSets;
+    vector <Set> sets; //each set composed of blocks
+    int numSets; 
     int numBlocks;
     int numBytes;
     int slotsPerSet;
-    bool wa;
-    bool wt = false;
-    bool isLru;
+    bool wa; //write-allocate
+    bool wt = false; //write through
+    bool isLru; //LRU or FIFO
     int loadHits = 0;
     int loadMisses = 0;
     int storeHits = 0;
@@ -80,6 +80,10 @@ void print(int loads, int stores, int loadHits, int loadMiss, int storeHit, int 
 bool powerOfTwo(int block) {
     if (block == 0)
         return 0;
+    
+    if (block == 1) {
+        return 1;
+    }
     while (block != 1)
     {
         if (block % 2 != 0)
@@ -112,10 +116,10 @@ string hexToBinary(char c) {
 
 
 bool found(Cache * c, unsigned int tag, unsigned int index, bool wt, bool isLru) {
-    if (c->sets.empty()) {
+    if (c->sets.empty()) { //if no elements in cache
         return false;
     }
-    vector<Slot>::iterator it;
+    vector<Slot>::iterator it; //to check every element of cache
     for (it = c->sets.at(index).blocks.begin(); it != c->sets.at(index).blocks.end(); ++it) {
         if ((*it).tag == tag) {
             if (isLru) {
@@ -171,16 +175,21 @@ int main(int argc, char *argv[]) {
     string blockString = argv[2];
     sets = std::stoi(setString);
     blocks = std::stoi(blockString);
-    if (blocks < 4) {
-        std::cerr <<  "error: invalid block size\n";
-        return 1;
-    }
+
+    //to check if arguments are valid
     if (!powerOfTwo(blocks) || !powerOfTwo(sets)) {
         std::cerr <<  "error: not power of two\n";
         return 1;
     }
     string byteString = argv[3];
     bytes = std::stoi(byteString);
+    
+    if (bytes < 4) {
+        std::cerr <<  "error: invalid block size\n";
+        return 1;
+    }
+
+    //storing argument values
     string input = argv[4];
     if (input.compare("write-allocate") == 0) {
         cache->wa = true;
@@ -197,107 +206,109 @@ int main(int argc, char *argv[]) {
     int offsetBits = bitCount(blocks);
     int indexBits = bitCount(sets);
     int tagBits = 32 - (offsetBits + indexBits);
-    //address = address >> offsetBits;
-    
-    
-    string line;
-    //long address;
-    
-    while (cin >> readOrWrite) { 
-        //cin >> readOrWrite;
+
+    int numLines = 0;
+    int countSlots = 0; 
+
+    //read in from trace file
+    while (cin >> readOrWrite) {  
         cin >> std::hex >> address;
-        //string memAddressString;
-        //cin >> memAddressString;
         string extra;
         cin >> extra;
 
+        //store offset, index, and tag
+        long offset = ((1 << offsetBits) - 1) & address;
+        long i = ((1 << indexBits) - 1) & (address >> offsetBits);
+        long t = ((1 << tagBits) - 1) & (address >> (32 - tagBits));
 
-        // for (int i = 0; i < 4; i++) {
-        //     memAddressString += hexToBinary(memAddressString[i]);
-        // }
-        //string readOrWrite = line.substr(0, 1);
-        //string memAddress = line.substr(4, 8);
-        //int memAddress = std::stoi(memAddressString) >> offsetBits;
-        //long memAddress = address >> offsetBits;
-        //string memAddressString = to_string(memAddress);
-       // string tag = memAddressString.substr(0,tagBits);
-       long offset = ((1 << offsetBits) - 1) & address;
-       long i = ((1 << indexBits) - 1) & (address >> offsetBits);
-       long t = ((1 << tagBits) - 1) & (address >> (32 - tagBits));
-
-       // unsigned int t = stoi(tag);
-       // string index = memAddressString.substr(tagBits, indexBits);
-        //int i = stoi(index);
         vector<Slot>::iterator it;
+        //initialize to empty vectors/set
+        vector<Set> * cacheSets = new vector<Set>;
+        cache->sets = *cacheSets;
+        Set * s = new Set();
+        cache->sets.push_back(*s);
+        std::vector<Slot> * block = new vector<Slot>;
+        cache->sets.at(i).blocks = *block;
+
+
         
-        if (readOrWrite.compare("l") == 0) {
+        if (readOrWrite.compare("l") == 0) { //load
             (cache->totalLoads)++;
-            //vector<slot> slots = cache->sets.at(index);
-            if (cache->sets.at(i).blocks.empty()) { //check if cache at index is empty
+
+            Slot * sl = new Slot(); //make new slot to store
+            sl->dirty = false;
+            sl->tag = t;
+            sl->valid = true;
+
+            if (numLines == 0) {
+                //since cache is currently empty, add into cache
                 hit = false;
-                Slot * s = new Slot();
-                    s->dirty = false;
-                    s->tag = t;
-                    s->valid = true;
-                    //add to beginning of set blocks
-                    Slot old = cache->sets.at(i).blocks.back();
-                    cache->sets.at(i).blocks.pop_back();
-                    cache->sets.at(i).blocks.insert(cache->sets.at(i).blocks.begin(), *s);
-            } else {
-                if (found(cache, t, i, isLru)) {
-                    hit = true;
-                    (cache->loadHits)++;
-                    (cache->totalCycles)++;
+                (*s).blocks.push_back(*sl);
+                (cache->loadMisses)++; 
+            } else if (!(found(cache, t, i, isLru))) { //if not found in cache, add to cache
+                hit = false;
+                (*block).push_back(*sl);
+                (cache->loadMisses)++; 
+
+                if (numLines == (cache->numBlocks * cache->numSets)) { //if space is full, evict
+                    (*block).erase((*block).begin());
                 }
+
+            } else { //if it is found in cache
+                if (found(cache, t, i, isLru)) {
+                hit = true;
+                (cache->loadHits)++;
+                (cache->totalCycles)++;
+                } 
             }
             
-        hit = false;
-        (cache->loadMisses)++; 
+    
         cache->totalCycles += cache->numBytes / 4 * 100;
-        //rearrange cache
+        
         }
+
         if (readOrWrite.compare("s") == 0) {  
             (cache->totalStores)++;
-//cache->sets.at(i).blocks.empty() ||
-            if (!(found(cache, t, i, isLru))) {
-                //hit = false;
+
+            if (!(found(cache, t, i, isLru))) { //if not found
                 (cache->storeMisses)++;
                 if (cache->wt == false) {
                     cache->totalCycles += 100;
                 } 
                 if (cache->wa == true) {
-                    Slot * s = new Slot();
+                    Slot * s = new Slot(); //new slot to add into cache
                     s->dirty = true;
                     s->tag = t;
                     s->valid = true;
-                    //add to beginning of set blocks
                     struct Slot old; 
-                    if (!cache->sets.empty()) {
-                        old = cache->sets.at(i).blocks.back();
-                        cache->sets.at(i).blocks.pop_back();
+                    if (!cache->sets.empty()) { //if not empty, evict
+                        old = cache->sets.at(i).blocks.front();
+                        cache->sets.at(i).blocks.erase(cache->sets.at(i).blocks.begin()); //erase oldest element
                     }
-                    cache->sets.at(i).blocks.insert(cache->sets.at(i).blocks.begin(), *s);
+                    cache->sets.at(i).blocks.push_back(*s); //add to cache
 
-                    //cache->sets.at(stoi(index)).blocks.erase(cache->sets.at(stoi(index)).blocks.end());
-                    //remove last
-                    //add to front 
-                    (cache->totalCycles) += 100 * cache->numBytes / 4;
+                    (cache->totalCycles) += 100 * cache->numBytes / 4; //calculate cycles
                     (cache->totalCycles)++;
+
                     if (cache->wt && old.dirty) {
                         (cache->totalCycles) += 100 * cache->numBytes / 4;
                     } else if (!cache->wt){
                         (cache->totalCycles) += 0; 
                     }
                 }
-            } else if (found(cache, t, i, cache->wt)) { 
+            } else if (found(cache, t, i, cache->wt)) {  //if found & already in cache
                 (cache->storeHits)++;
                 if (cache->wt) {
                     (cache->totalCycles) += 100;
                 }
 
             }
-        }    
+        }
+    numLines++; //to track number of lines read from trace file
+    cache->numBytes = bytes; //update numBytes
     }
+
+    //print output
     print(cache->totalLoads, cache->totalStores, cache->loadHits, cache->loadMisses, cache->storeHits, cache->storeMisses, cache->totalCycles);
         
     return 0;

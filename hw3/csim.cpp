@@ -1,9 +1,10 @@
+//jfinke14
+//nbalaji2
 #include <stdlib.h>
 #include <iostream>
 #include <string>
 #include <set>
 #include <vector>
-//#include "block.h"
 using namespace std;
 
 
@@ -13,12 +14,13 @@ struct Slot {
     unsigned loadTime;
     unsigned accessTime;
     bool dirty;
+  unsigned setNumber;
 };
 struct Set {
     vector <Slot> blocks;
 };
 struct Cache {
-    vector <Set> sets; //each set composed of blocks
+  vector <Set> sets = new Vector <Set>; //each set composed of blocks
     int numSets; 
     int numBlocks;
     int numBytes;
@@ -93,27 +95,6 @@ bool powerOfTwo(int block) {
     return 1;
 }
 
-string hexToBinary(char c) {
-    switch (toupper(c)) {
-        case '0': return "0000";
-        case '1': return "0001";
-        case '2': return "0010";
-        case '3': return "0011";
-        case '4': return "0100";
-        case '5': return "0101";
-        case '6': return "0110";
-        case '7': return "0111";
-        case '8': return "1000";
-        case '9': return "1001";
-        case 'A': return "1010";
-        case 'B': return "1011";
-        case 'C': return "1100";
-        case 'D': return "1101";
-        case 'E': return "1110";
-        default: return "1111";
-    }
-}
-
 
 bool found(Cache * c, unsigned int tag, unsigned int index, bool wt, bool isLru) {
     if (c->sets.empty()) { //if no elements in cache
@@ -124,7 +105,7 @@ bool found(Cache * c, unsigned int tag, unsigned int index, bool wt, bool isLru)
         if ((*it).tag == tag) {
             if (isLru) {
                 //takes the slot with the correct tag and moves it to front 
-                c->sets.at(index).blocks.insert(c->sets.at(index).blocks.begin(), *it);
+                c->sets.at(index).blocks.insert(c->sets.at(index).blocks.end(), *it);
                 //erases the old slot
                 c->sets.at(index).blocks.erase(it);
             }
@@ -146,7 +127,7 @@ bool found(Cache * c, unsigned int tag, unsigned int index, bool isLru) {
         if ((*it).tag == tag) {
             if (isLru) {
                 //takes the slot with the correct tag and moves it to front 
-                c->sets.at(index).blocks.insert(c->sets.at(index).blocks.begin(), *it);
+                c->sets.at(index).blocks.insert(c->sets.at(index).blocks.end(), *it);
                 //erases the old slot
                 c->sets.at(index).blocks.erase(it);
             }
@@ -208,7 +189,7 @@ int main(int argc, char *argv[]) {
     int tagBits = 32 - (offsetBits + indexBits);
 
     int numLines = 0;
-    int countSlots = 0; 
+    int countSlotPerSets = 0; 
 
     //read in from trace file
     while (cin >> readOrWrite) {  
@@ -222,13 +203,13 @@ int main(int argc, char *argv[]) {
         long t = ((1 << tagBits) - 1) & (address >> (32 - tagBits));
 
         vector<Slot>::iterator it;
-        //initialize to empty vectors/set
-        vector<Set> * cacheSets = new vector<Set>;
-        cache->sets = *cacheSets;
-        Set * s = new Set();
-        cache->sets.push_back(*s);
-        std::vector<Slot> * block = new vector<Slot>;
-        cache->sets.at(i).blocks = *block;
+        initialize to empty vectors/set
+	vector<Set> * cacheSets = new vector<Set>;
+	  cache->sets = *cacheSets;
+	  Set * s = new Set();
+         cache->sets.push_back(*s);
+	 std::vector<Slot> * block = new vector<Slot>;
+	 cache->sets.at(i).blocks = *block;
 
 
         
@@ -243,15 +224,17 @@ int main(int argc, char *argv[]) {
             if (numLines == 0) {
                 //since cache is currently empty, add into cache
                 hit = false;
-                (*s).blocks.push_back(*sl);
+                (*blocks).push_back(*sl);
+		countSlotPerSets++;
                 (cache->loadMisses)++; 
             } else if (!(found(cache, t, i, isLru))) { //if not found in cache, add to cache
                 hit = false;
-                (*block).push_back(*sl);
+                (*blocks).push_back(*sl);
+		countSlotPerSets++;
                 (cache->loadMisses)++; 
 
-                if (numLines == (cache->numBlocks * cache->numSets)) { //if space is full, evict
-                    (*block).erase((*block).begin());
+                if (countSlotPerSets == blocks ) { //if space is full, evict
+		  (*blocks).erase(cache->sets.blocks).begin());
                 }
 
             } else { //if it is found in cache

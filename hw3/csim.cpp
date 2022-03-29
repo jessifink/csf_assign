@@ -20,7 +20,7 @@ struct Set {
     vector <Slot> blocks;
 };
 struct Cache {
-  vector <Set> sets = new Vector <Set>; //each set composed of blocks
+  vector <Set> sets; //each set composed of blocks
     int numSets; 
     int numBlocks;
     int numBytes;
@@ -203,13 +203,13 @@ int main(int argc, char *argv[]) {
         long t = ((1 << tagBits) - 1) & (address >> (32 - tagBits));
 
         vector<Slot>::iterator it;
-        initialize to empty vectors/set
+        //initialize to empty vectors/set
 	vector<Set> * cacheSets = new vector<Set>;
-	  cache->sets = *cacheSets;
-	  Set * s = new Set();
-         cache->sets.push_back(*s);
-	 std::vector<Slot> * block = new vector<Slot>;
-	 cache->sets.at(i).blocks = *block;
+	cache->sets = *cacheSets;
+	Set * s = new Set();
+	cache->sets.push_back(*s);
+	std::vector<Slot> * block = new vector<Slot>;
+	cache->sets.at(i).blocks = *block;
 
 
         
@@ -224,17 +224,18 @@ int main(int argc, char *argv[]) {
             if (numLines == 0) {
                 //since cache is currently empty, add into cache
                 hit = false;
-                (*blocks).push_back(*sl);
+                (cache->sets.at(i).blocks).push_back(*sl);
 		countSlotPerSets++;
                 (cache->loadMisses)++; 
             } else if (!(found(cache, t, i, isLru))) { //if not found in cache, add to cache
                 hit = false;
-                (*blocks).push_back(*sl);
+                (cache->sets.at(i).blocks).push_back(*sl);
 		countSlotPerSets++;
                 (cache->loadMisses)++; 
 
                 if (countSlotPerSets == blocks ) { //if space is full, evict
-		  (*blocks).erase(cache->sets.blocks).begin());
+		  //(cache->sets.at(i).blocks).erase(*((cache->sets.at(i).blocks).begin()));
+		  (cache->sets.at(i).blocks).erase((cache->sets.at(i).blocks).begin());
                 }
 
             } else { //if it is found in cache

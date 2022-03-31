@@ -4,6 +4,8 @@
 #include <iostream>
 #include <string>
 #include <set>
+#include <sstream>
+//#include <stdio>
 #include <vector>
 using namespace std;
 //PROBLEMS: how to make the found access the right index -- currently getting index of two when the set count is only 2
@@ -16,7 +18,7 @@ struct Slot {
   Slot() : tag(0), valid(false), dirty(false){}
     unsigned int tag;
     bool valid = false; //valid means "empty" if valid, slot holds information. if invalid, no info
-  unsigned loadTime; 
+  unsigned int loadTime; 
     unsigned accessTime;
     bool dirty;
   unsigned setNumber;
@@ -58,6 +60,37 @@ int bitCount(int num) {
         num = num >> 1;
     }
     return count;
+}
+string hexCharToBinaryChar(char c)
+{
+   switch(toupper(c))
+    {
+        case '0': return "0000";
+        case '1': return "0001";
+        case '2': return "0010";
+        case '3': return "0011";
+        case '4': return "0100";
+        case '5': return "0101";
+        case '6': return "0110";
+        case '7': return "0111";
+        case '8': return "1000";
+        case '9': return "1001";
+        case 'A': return "1010";
+        case 'B': return "1011";
+        case 'C': return "1100";
+        case 'D': return "1101";
+        case 'E': return "1110";
+        case 'F': return "1111";
+    }
+}
+
+string hexStringToBinaryString(const string& hexString)
+{
+    // TODO use a loop from <algorithm> or smth
+    string binary;
+    for(int i = 0; i != hexString.length(); ++i)
+       binary += hexCharToBinaryChar(hexString[i]);
+    return binary;
 }
 void print(int loads, int stores, int loadHits, int loadMiss, int storeHit, int storeMiss, int totalCycles) {
     cout << "Total loads: " << loads << "\n";
@@ -146,7 +179,7 @@ int main(int argc, char *argv[]) {
     bool isLruOrFifo = false;
     bool writeAllocate = false;
     bool writeThrough = false;
-    unsigned int address;
+    string  address;
     string readOrWrite;
 
     if (argc != 7) { //check for valid number of arguments
@@ -185,7 +218,7 @@ int main(int argc, char *argv[]) {
 	isLruOrFifo = true;
     }
 
-    int offsetBits = bitCount(blocks);
+    int offsetBits = bitCount(bytes);
     int indexBits = bitCount(sets);
     int tagBits = 32 - (offsetBits + indexBits);
 
@@ -197,24 +230,36 @@ int main(int argc, char *argv[]) {
     for (i = cache.sets.begin(); i != cache.sets.end(); ++i) {
       (*i).blocks.resize(blocks);
     }
-
+    string fullLine;
     //evict when the number of blocks exceed the amount possible for one set -- everytime cache miss and have to add in new block you check 
     //when access a block set time to 0 increment the rest of the blocks by 1 (load or write = acess) evict the block with highest number LRU for both difference between LRU and fifo - in LRU if cache hit set time to 0 and the rest of the blocks get incremented by 1 
     //Fifo -- evict the one with the highest time 
     //evict is just using erase function
     //read in from trace file
-    while (cin >> readOrWrite) {  
-        cin >> std::hex >> address;
-        string extra;
-        cin >> extra;
-
+    while (getline(cin,fullLine)) {
+	readOrWrite = fullLine.substr(0,1);
+	address = fullLine.substr(4,8);
+	
+	// cin  >> address;	
+     
+	// cin >> extra;
+	//	int a = 10;
+	//stringstream ss;
+	//ss << address;
+string stringAddress;
+ stringAddress = hexStringToBinaryString(address);
+//	string stringAddress =std::toString(address);
+	string stringTag = stringAddress.substr(0,tagBits);
+	string stringIndex = stringAddress.substr(tagBits, indexBits);
         //store offset, index, and tag
-        long offset = ((1 << offsetBits) - 1) & address;
-        long i =
+        //long offset = ((1 << offsetBits) - 1) & address;
+	long i = std::stoi(stringIndex);
+	
 	  //take the first number given (set count) log 2 of that number has to be a power of 2 -- ex: 16 4 bits those 4 bits will be combined bacislay in binary to be 0 -15 
 	  // ((1 << indexBits) - 1) & (address >> offsetBits);
-        long t = ((1 << tagBits) - 1) & (address >> (32 - tagBits));
+        long t = std::stoi(stringTag);
 
+	
         vector<Slot>::iterator it;
         //initialize to empty vectors/set
 	//vector<Set> * cacheSets = new vector<Set>;
@@ -225,6 +270,8 @@ int main(int argc, char *argv[]) {
 	//	cache->sets.at(i).blocks = *block;
         
         if (readOrWrite.compare("l") == 0) { //load
+	  (cache.sets.at(i).blocks.at(i).loadTime) = 0;
+	  //increase all others PLUS 1
             (cache.totalLoads)++;
 	    Slot slot (t, true, true);
 
@@ -260,7 +307,7 @@ int main(int argc, char *argv[]) {
 
         if (readOrWrite.compare("s") == 0) {  
             (cache.totalStores)++;
-
+	    (cache.sets.at(i).blocks.at(i).loadTime) = 0;
             if (!(found(cache, t, i))) { //if not found
                 (cache.storeMisses)++;
                 if (cache.wt == false) {

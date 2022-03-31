@@ -24,6 +24,7 @@ struct Slot {
   unsigned setNumber;
 };
 struct Set {
+  unsigned int  numBlocksFilled = 0;
     vector <Slot> blocks;
   vector<Slot>::iterator recent;
 };
@@ -54,13 +55,14 @@ struct Cache {
 //load time increases every load or store
 //accesstime - hits 
 
-int bitCount(int num) {
-    int count = 0;
-    while (num != 0) {
-        count++;
-        num = num >> 1;
-    }
-    return count;
+unsigned int bitCount(unsigned int num) {
+     unsigned  int count = 0;
+   while (num != 1) {
+      count++;
+      num = num >> 1;
+   }
+   return count;
+  //  return log2(num);
 }
 string hexCharToBinaryChar(char c)
 {
@@ -221,53 +223,67 @@ int main(int argc, char *argv[]) {
 
     int offsetBits = bitCount(bytes);
     int indexBits = bitCount(sets);
-    int tagBits = 32 - (offsetBits + indexBits);
+    int tagBits = 32 - offsetBits - indexBits;
 
     int numLines = 0;
     int countSlotPerSets = 0; 
     Cache cache(sets,blocks, bytes, writeAllocate, writeThrough, isLruOrFifo);
     cache.sets.resize(sets);
     vector<Set>:: iterator i;
-    for (i = cache.sets.begin(); i != cache.sets.end(); ++i) {
-      (*i).blocks.resize(blocks);
-    }
+     for (i = cache.sets.begin(); i != cache.sets.end(); ++i) {
+     (*i).blocks.resize(blocks);
+     }
     string fullLine;
     //evict when the number of blocks exceed the amount possible for one set -- everytime cache miss and have to add in new block you check 
     //when access a block set time to 0 increment the rest of the blocks by 1 (load or write = acess) evict the block with highest number LRU for both difference between LRU and fifo - in LRU if cache hit set time to 0 and the rest of the blocks get incremented by 1 
     //Fifo -- evict the one with the highest time 
     //evict is just using erase function
     //read in from trace file
-    while (getline(cin,fullLine)) {
-      readOrWrite = fullLine.substr(0,1);
-      address = fullLine.substr(4,8);
+    while (cin >> readOrWrite) {
+      unsigned int address;
+      cin >> std::hex >> address;
+      //      uint32_t address = std::stoi(stringAddress);
+      //      uint32_t offset = ((1 << offsetBits) - 1) & address;
+      uint32_t i = (address << tagBits) >> (tagBits + offsetBits);
+      uint32_t t = (address >> tagBits) & 0xFFFF;
+      //(indexBits + offsetBits)) & ((1 << tagBits) -1);
+      // uint32_t t = ((1 << tagBits) - 1) & (address >> (32 - tagBits));
+      string extra;
+      cin >> extra;
+      // readOrWrite = fullLine.substr(0,1);
+      // address = fullLine.substr(4,8);
       //uint32_t address;
       //uint32_t extra;
       //cin  >> address;	
      
       //cin >> extra;
-		int a = 10;
-	stringstream ss;
-	ss << address;
-	string stringAddress;
-	stringAddress = hexStringToBinaryString(address);
-	string stringAddress =std::toString(address);
-	string stringTag = stringAddress.substr(0,tagBits);
-	string stringIndex = stringAddress.substr(tagBits, indexBits);
-        //store offset, index, and tag
+      //		int a = 10;
+      //	stringstream ss;
+      //	ss << address;
+      //	string stringAddress;
+      //	stringAddress = hexStringToBinaryString(address);
+	//	string stringAddress =std::toString(address);
+      //	string stringTag = stringAddress.substr(0,tagBits);
+      //	string stringIndex = stringAddress.substr(0+tagBits, indexBits);
+      //	int i = std::stoi(stringIndex, nullptr, 2);
+      if ((tagBits + offsetBits) == 32) {
+	  i = 0;
+      	}
+	//store offset, index, and tag
         //uint32_t offset = ((1 << offsetBits) - 1) & address;
 	//uint32_t i = (address << tagBits) >> (tagBits + offsetBits);
-	if (tagBits == offsetBits) {
-	  i = 0;
-	}
+	//	if (tagBits == offsetBits) {
+	// i = 0;
+	//	}
 	
 	//uint32_t i = std::stoi(stringIndex);
-	i = i % sets;
+	//	i = i % sets;
 	  //take the first number given (set count) log 2 of that number has to be a power of 2 -- ex: 16 4 bits those 4 bits will be combined bacislay in binary to be 0 -15 
 	  // ((1 << indexBits) - 1) & (address >> offsetBits);
-        uint32_t t = std::stoi(stringTag);
+      // uint32_t t = std::stoi(stringTag);
 
 	
-        vector<Slot>::iterator it;
+	//        vector<Slot>::iterator it;
         //initialize to empty vectors/set
 	//vector<Set> * cacheSets = new vector<Set>;
 	//cache->sets = *cacheSets;
@@ -277,6 +293,11 @@ int main(int argc, char *argv[]) {
 	//	cache->sets.at(i).blocks = *block;
         
         if (readOrWrite.compare("l") == 0) { //load
+	  // (cache.sets.at(i).blocks.at(i).loadTime) = 0;
+	  vector<Slot>::iterator iterator;
+          for (iterator = cache.sets.at(i).blocks.begin(); iterator != cache.sets.at(i).blocks.end(); ++iterator) {
+	    (*iterator).loadTime++;
+	  }
 	  (cache.sets.at(i).blocks.at(i).loadTime) = 0;
 	  //increase all others PLUS 1
             (cache.totalLoads)++;
@@ -285,19 +306,50 @@ int main(int argc, char *argv[]) {
             if (numLines == 0) {
                 //since cache is currently empty, add into cache
                 hit = false;
-                (cache.sets.at(i).blocks).push_back(slot);
+		(cache.sets.at(i).blocks).insert(cache.sets.at(i).blocks.begin(), slot);
+		(cache.sets.at(i).blocks).pop_back();
+
+		//		(cache.sets.at(i).blocks).erase(cache.sets.at(i).blocks.end());
+		// (cache.sets.at(i).blocks).push_back(slot);
+		numLines++;
+		(cache.sets.at(i).numBlocksFilled)++;
 		countSlotPerSets++;
                 (cache.loadMisses)++; 
             } else if (!(found(cache, t, i))) { //if not found in cache, add to cache
                 hit = false;
-                (cache.sets.at(i).blocks).push_back(slot);
-		countSlotPerSets++;
-                (cache.loadMisses)++; 
+		//check if numBLocks excceeds num blocks per set
+		if (blocks == (cache.sets.at(i).numBlocksFilled)) {
+		  // if (isLruOrFifo == true) {
+		    vector<Slot>::iterator it;
+		    vector<Slot>::iterator max;
+		    for (it = cache.sets.at(i).blocks.begin(); it != cache.sets.at(i).blocks.end(); ++it) {
+		     unsigned int maxLoadTime = 0;
+		      if ((cache.sets.at(i).blocks.at(i).loadTime) > maxLoadTime) {
+			max = it;
+		      }
+		    }
+		    cache.sets.at(i).blocks.erase(max);
+		    //    for (size_t i = 0; i < c.sets.at(index).blocks.size(); i++) {
+		    // int maxIndex = 0;
+		    // int maxLoadTime = 0;
+		    // if ((cache.sets.at(i).blocks.at(i).loadTime) > maxLoadTime) {
+		    //		maxLoadTime = (cache.sets.at(i).blocks.at(i).loadTime);
+		    //	maxIndex = i;
+		
+		    //	    }
+		}
+                (cache.sets.at(i).blocks).insert(cache.sets.at(i).blocks.begin(), slot);
+		(cache.sets.at(i).blocks).pop_back();
+		//	(cache.sets.at(i).blocks).erase(cache.sets.at(i).blocks.end());
 
-                if (countSlotPerSets == blocks ) { //if space is full, evict
+
+		//	countSlotPerSets++;
+                (cache.loadMisses)++;
+		(cache.sets.at(i).numBlocksFilled)++;
+		// if (countSlotPerSets == blocks ) { //if space is full, evict
 		  //(cache->sets.at(i).blocks).erase(*((cache->sets.at(i).blocks).begin()));
 		  //  (cache.sets.at(i).blocks).erase((cache.sets.at(i).blocks).begin());
-                }
+		// }
 
             } else { //if it is found in cache
                 if (found(cache, t, i)) {

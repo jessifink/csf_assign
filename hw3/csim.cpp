@@ -153,25 +153,6 @@ bool found(Cache & c, unsigned int tag, unsigned int index) {
     return false;
 }
 
-//bool found(Cache * c, unsigned int tag, unsigned int index, bool isLru) {
-//  if (c->sets.empty()) {
-//      return false;
-//  }
-//  vector<Slot>::iterator it;
-//  for (it = c->sets.at(index).blocks.begin(); it != c->sets.at(index).blocks.end(); ++it) {
-//      if ((*it).tag == tag) {
-/*          if (isLru) {
-                //takes the slot with the correct tag and moves it to front 
-                c->sets.at(index).blocks.insert(c->sets.at(index).blocks.end(), *it);
-                //erases the old slot
-                c->sets.at(index).blocks.erase(it);
-            }
-            return true;
-        }
-    }
-    return false;
-}
-*/
 Cache::Cache(int numSets,int numBlocks,int  numBytes,bool  wa,bool  wt,bool  isLru) : numSets{numSets}, numBlocks{numBlocks}, numBytes{numBytes}, wa{wa}, wt{wt}, isLru{isLru} {}
 Slot::Slot (int tag, bool valid , bool dirty) : tag{tag}, valid{valid}, dirty{dirty} {} 
 int main(int argc, char *argv[]) {
@@ -242,56 +223,15 @@ int main(int argc, char *argv[]) {
     while (cin >> readOrWrite) {
       unsigned int address;
       cin >> std::hex >> address;
-      //      uint32_t address = std::stoi(stringAddress);
-      //      uint32_t offset = ((1 << offsetBits) - 1) & address;
       uint32_t i = (address << tagBits) >> (tagBits + offsetBits);
       uint32_t t = (address >> tagBits) & 0xFFFF;
-      //(indexBits + offsetBits)) & ((1 << tagBits) -1);
+     //(indexBits + offsetBits)) & ((1 << tagBits) -1);
       // uint32_t t = ((1 << tagBits) - 1) & (address >> (32 - tagBits));
       string extra;
       cin >> extra;
-      // readOrWrite = fullLine.substr(0,1);
-      // address = fullLine.substr(4,8);
-      //uint32_t address;
-      //uint32_t extra;
-      //cin  >> address;	
-     
-      //cin >> extra;
-      //		int a = 10;
-      //	stringstream ss;
-      //	ss << address;
-      //	string stringAddress;
-      //	stringAddress = hexStringToBinaryString(address);
-	//	string stringAddress =std::toString(address);
-      //	string stringTag = stringAddress.substr(0,tagBits);
-      //	string stringIndex = stringAddress.substr(0+tagBits, indexBits);
-      //	int i = std::stoi(stringIndex, nullptr, 2);
       if ((tagBits + offsetBits) == 32) {
 	  i = 0;
       	}
-	//store offset, index, and tag
-        //uint32_t offset = ((1 << offsetBits) - 1) & address;
-	//uint32_t i = (address << tagBits) >> (tagBits + offsetBits);
-	//	if (tagBits == offsetBits) {
-	// i = 0;
-	//	}
-	
-	//uint32_t i = std::stoi(stringIndex);
-	//	i = i % sets;
-	  //take the first number given (set count) log 2 of that number has to be a power of 2 -- ex: 16 4 bits those 4 bits will be combined bacislay in binary to be 0 -15 
-	  // ((1 << indexBits) - 1) & (address >> offsetBits);
-      // uint32_t t = std::stoi(stringTag);
-
-	
-	//        vector<Slot>::iterator it;
-        //initialize to empty vectors/set
-	//vector<Set> * cacheSets = new vector<Set>;
-	//cache->sets = *cacheSets;
-	//Set * s = new Set();
-	//cache->sets.push_back(*s);
-	//std::vector<Slot> * block = new vector<Slot>;
-	//	cache->sets.at(i).blocks = *block;
-        
         if (readOrWrite.compare("l") == 0) { //load
 	  // (cache.sets.at(i).blocks.at(i).loadTime) = 0;
 	  vector<Slot>::iterator iterator;
@@ -308,13 +248,9 @@ int main(int argc, char *argv[]) {
                 hit = false;
 		(cache.sets.at(i).blocks).insert(cache.sets.at(i).blocks.begin(), slot);
 		(cache.sets.at(i).blocks).pop_back();
-
-		//		(cache.sets.at(i).blocks).erase(cache.sets.at(i).blocks.end());
-		// (cache.sets.at(i).blocks).push_back(slot);
 		numLines++;
 		(cache.sets.at(i).numBlocksFilled)++;
-		countSlotPerSets++;
-                (cache.loadMisses)++; 
+	        (cache.loadMisses)++; 
             } else if (!(found(cache, t, i))) { //if not found in cache, add to cache
                 hit = false;
 		//check if numBLocks excceeds num blocks per set
@@ -322,88 +258,127 @@ int main(int argc, char *argv[]) {
 		  // if (isLruOrFifo == true) {
 		    vector<Slot>::iterator it;
 		    vector<Slot>::iterator max;
-		    for (it = cache.sets.at(i).blocks.begin(); it != cache.sets.at(i).blocks.end(); ++it) {
+		   for (it = cache.sets.at(i).blocks.begin(); it != cache.sets.at(i).blocks.end(); ++it) {
 		     unsigned int maxLoadTime = 0;
 		      if ((cache.sets.at(i).blocks.at(i).loadTime) > maxLoadTime) {
 			max = it;
 		      }
 		    }
 		    cache.sets.at(i).blocks.erase(max);
-		    //    for (size_t i = 0; i < c.sets.at(index).blocks.size(); i++) {
-		    // int maxIndex = 0;
-		    // int maxLoadTime = 0;
-		    // if ((cache.sets.at(i).blocks.at(i).loadTime) > maxLoadTime) {
-		    //		maxLoadTime = (cache.sets.at(i).blocks.at(i).loadTime);
-		    //	maxIndex = i;
-		
-		    //	    }
 		}
                 (cache.sets.at(i).blocks).insert(cache.sets.at(i).blocks.begin(), slot);
 		(cache.sets.at(i).blocks).pop_back();
-		//	(cache.sets.at(i).blocks).erase(cache.sets.at(i).blocks.end());
-
-
-		//	countSlotPerSets++;
                 (cache.loadMisses)++;
 		(cache.sets.at(i).numBlocksFilled)++;
-		// if (countSlotPerSets == blocks ) { //if space is full, evict
-		  //(cache->sets.at(i).blocks).erase(*((cache->sets.at(i).blocks).begin()));
-		  //  (cache.sets.at(i).blocks).erase((cache.sets.at(i).blocks).begin());
-		// }
-
-            } else { //if it is found in cache
+	    } else { //if it is found in cache
                 if (found(cache, t, i)) {
                 hit = true;
                 (cache.loadHits)++;
                 (cache.totalCycles)++;
-                } 
-            }
-            
-    
-        cache.totalCycles += cache.numBytes / 4 * 100;
-        
-        }
 
+
+		if (isLruOrFifo) {
+		  vector<Slot>::iterator iterator;
+
+		  for (iterator = cache.sets.at(i).blocks.begin(); iterator != cache.sets.at(i).blocks.end(); ++iterator) {
+
+		    (*iterator).loadTime++;
+		  }
+
+		  (cache.sets.at(i).blocks.at(i).loadTime) = 0;
+		  //increase all others PLUS 1
+		  //(cache.totalLoads)++;
+		}
+		
+		}
+	       
+        cache.totalCycles += cache.numBytes / 4 * 100;   
+	 
+	    }
+	}
+	
         if (readOrWrite.compare("s") == 0) {  
-            (cache.totalStores)++;
-	    (cache.sets.at(i).blocks.at(i).loadTime) = 0;
-            if (!(found(cache, t, i))) { //if not found
-                (cache.storeMisses)++;
-                if (cache.wt == false) {
-                    cache.totalCycles += 100;
-                } 
-                if (cache.wa == true) {
-		    Slot old (t, true, true);
-		    Slot s (t, true, true);
-		    // if (!cache.sets.empty()) { //if not empty, evict
-		      //    old = cache.sets.at(i).blocks.front();
-		      // cache.sets.at(i).blocks.erase(cache.sets.at(i).blocks.begin()); //erase oldest element
-		      // }
-                    cache.sets.at(i).blocks.push_back(s); //add to cache
+          vector<Slot>::iterator storeIt;
+          for (storeIt = cache.sets.at(i).blocks.begin(); storeIt != cache.sets.at(i).blocks.end(); ++storeIt) {
+            (*storeIt).loadTime++;
+          }
 
+	  (cache.sets.at(i).blocks.at(i).loadTime) = 0;
+	  (cache.totalStores)++;
+	  Slot slot (t, true, true);
+
+	  
+	  if (numLines == 0) {
+	    cache.storeHits = false;
+	    
+	  }
+	  
+	  //(cache.sets.at(i).blocks.at(i).loadTime) = 0;
+          if (!(found(cache, t, i))) { //if not found
+                (cache.storeMisses)++;
+                if (cache.wa == false) {
+                    cache.totalCycles += 100;
+                } else if (cache.wa == true) {
+		//check if numBLocks excceeds num blocks per set                                                                 
+                if (blocks == (cache.sets.at(i).numBlocksFilled)) {
+                  // if (isLruOrFifo == true) {                                                                                                                                                                     
+                    vector<Slot>::iterator it;
+                    vector<Slot>::iterator max;
+                   for (it = cache.sets.at(i).blocks.begin(); it != cache.sets.at(i).blocks.end(); ++it) {
+                     unsigned int maxLoadTime = 0;
+                      if ((cache.sets.at(i).blocks.at(i).loadTime) > maxLoadTime) {
+                        max = it;
+                      }
+                    }
+                   cache.sets.at(i).blocks.erase(max);
+                }
+                (cache.sets.at(i).blocks).insert(cache.sets.at(i).blocks.begin(), slot);
+                (cache.sets.at(i).blocks).pop_back();
+		(cache.sets.at(i).numBlocksFilled)++;
                     (cache.totalCycles) += 100 * cache.numBytes / 4; //calculate cycles
                     (cache.totalCycles)++;
-
-                    if (cache.wt && old.dirty) {
-                        (cache.totalCycles) += 100 * cache.numBytes / 4;
-                    } else if (!cache.wt){
-                        (cache.totalCycles) += 0; 
-                    }
-                }
+		    if (cache.wt == true) {
+		      cache.totalCycles += 100;
+		    }
+		    
+		}
             } else if (found(cache, t, i)) {  //if found & already in cache
                 (cache.storeHits)++;
+		(cache.totalCycles)++;
                 if (cache.wt) {
                     (cache.totalCycles) += 100;
-                }
+                } else {
+		  //write only to cache and mark block as dirty
+		  cache.sets.at(i).blocks.at(0).dirty = true;
+		}
 
-            }
+		if (isLruOrFifo) {
+                  vector<Slot>::iterator iterator;
+
+                  for (iterator = cache.sets.at(i).blocks.begin(); iterator != cache.sets.at(i).blocks.end(); ++iterator) {
+
+                    (*iterator).loadTime++;
+                  }
+
+                  (cache.sets.at(i).blocks.at(i).loadTime) = 0;
+                  //increase all others PLUS 1                                                                             
+                  //(cache.totalStores)++;
+
+		  }
+				
+	  }
         }
     numLines++; //to track number of lines read from trace file
     cache.numBytes = bytes; //update numBytes
-    }
+	
+     	}
+    
 
     //print output
     print(cache.totalLoads, cache.totalStores, cache.loadHits, cache.loadMisses, cache.storeHits, cache.storeMisses, cache.totalCycles);
         
     return 0;
+
 }
+
+

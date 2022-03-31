@@ -16,7 +16,7 @@ using namespace std;
 struct Slot {
   Slot (int, bool, bool);
   Slot() : tag(0), valid(false), dirty(false){}
-    unsigned int tag;
+    uint32_t tag;
     bool valid = false; //valid means "empty" if valid, slot holds information. if invalid, no info
   unsigned int loadTime; 
     unsigned accessTime;
@@ -25,6 +25,7 @@ struct Slot {
 };
 struct Set {
     vector <Slot> blocks;
+  vector<Slot>::iterator recent;
 };
 struct Cache {
   vector <Set> sets; //each set composed of blocks
@@ -172,9 +173,9 @@ bool found(Cache & c, unsigned int tag, unsigned int index) {
 Cache::Cache(int numSets,int numBlocks,int  numBytes,bool  wa,bool  wt,bool  isLru) : numSets{numSets}, numBlocks{numBlocks}, numBytes{numBytes}, wa{wa}, wt{wt}, isLru{isLru} {}
 Slot::Slot (int tag, bool valid , bool dirty) : tag{tag}, valid{valid}, dirty{dirty} {} 
 int main(int argc, char *argv[]) {
-    int sets = 0;
-    int blocks = 0;
-    int bytes = 0;
+    uint32_t sets = 0;
+    uint32_t blocks = 0;
+    uint32_t bytes = 0;
     bool hit = false;
     bool isLruOrFifo = false;
     bool writeAllocate = false;
@@ -237,27 +238,33 @@ int main(int argc, char *argv[]) {
     //evict is just using erase function
     //read in from trace file
     while (getline(cin,fullLine)) {
-	readOrWrite = fullLine.substr(0,1);
-	address = fullLine.substr(4,8);
-	
-	// cin  >> address;	
+      readOrWrite = fullLine.substr(0,1);
+      address = fullLine.substr(4,8);
+      //uint32_t address;
+      //uint32_t extra;
+      //cin  >> address;	
      
-	// cin >> extra;
-	//	int a = 10;
-	//stringstream ss;
-	//ss << address;
-string stringAddress;
- stringAddress = hexStringToBinaryString(address);
-//	string stringAddress =std::toString(address);
+      //cin >> extra;
+		int a = 10;
+	stringstream ss;
+	ss << address;
+	string stringAddress;
+	stringAddress = hexStringToBinaryString(address);
+	string stringAddress =std::toString(address);
 	string stringTag = stringAddress.substr(0,tagBits);
 	string stringIndex = stringAddress.substr(tagBits, indexBits);
         //store offset, index, and tag
-        //long offset = ((1 << offsetBits) - 1) & address;
-	long i = std::stoi(stringIndex);
+        //uint32_t offset = ((1 << offsetBits) - 1) & address;
+	//uint32_t i = (address << tagBits) >> (tagBits + offsetBits);
+	if (tagBits == offsetBits) {
+	  i = 0;
+	}
 	
+	//uint32_t i = std::stoi(stringIndex);
+	i = i % sets;
 	  //take the first number given (set count) log 2 of that number has to be a power of 2 -- ex: 16 4 bits those 4 bits will be combined bacislay in binary to be 0 -15 
 	  // ((1 << indexBits) - 1) & (address >> offsetBits);
-        long t = std::stoi(stringTag);
+        uint32_t t = std::stoi(stringTag);
 
 	
         vector<Slot>::iterator it;

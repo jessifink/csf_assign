@@ -1,5 +1,5 @@
 CPP_SRCS = main.cpp
-CPPFLAGS = -g -Wall -Wextra -pedantic -std=c++11
+CPPFLAGS = -g -O2 -Wall -Wextra -pedantic -std=c++11
 %.o : %.c
 	g++ $(CPPFLAGS) -cpp $<
 
@@ -11,7 +11,7 @@ csim : csim.o
 .PHONY: solution.zip
 solution.zip :
 	rm -f solution.zip
-	zip -9r $@ Makefile *.cpp *.h
+	zip -9r $@ Makefile csim.cpp *.h README.txt
 
-	clean :
+clean :
 	rm -f *.o csim

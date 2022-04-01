@@ -4,42 +4,32 @@
 #include <iostream>
 #include <string>
 #include <set>
-#include <sstream>
-//#include <stdio>
 #include <vector>
 using namespace std;
-//PROBLEMS: how to make the found access the right index -- currently getting index of two when the set count is only 2
-//how to do time acess when does that get incremented and how do u use it?
-//when do you evict? -- how do we evict based on -- how to determine what is least recently used based on counter
-//if it calcluates that it is index 2 does that mean it is
-/// 
 
 struct Slot {
   Slot (uint32_t, bool, bool);
   Slot() : tag(0), valid(false), dirty(false){}
   uint32_t tag;
-  bool valid = false; //valid means "empty" if valid, slot holds information. if invalid, no info                                                                    
+  bool valid = false;                                                                     
   unsigned int loadTime;
-  unsigned accessTime;
   bool dirty;
-  unsigned setNumber;
 };
 struct Set {
   unsigned int  numBlocksFilled = 0;
   vector <Slot> blocks;
-  vector<Slot>::iterator recent;
 };
 struct Cache {
   Cache(uint32_t,uint32_t,uint32_t, bool, bool, bool);                                                                                                                                                                   
   Cache() : numSets(0), numBlocks(0), numBytes(0), wa(false), wt (false), isLru(false){}
-  vector <Set> sets; //each set composed of blocks                                                                                 int numSets;
+  vector <Set> sets;
   uint32_t numBlocks;
   uint32_t numSets;
   int numBytes;
   int slotsPerSet;
-  bool wa; //write-allocate                                                                                                                                          
-  bool wt = false; //write through                                                                                                                                   
-  bool isLru; //LRU or FIFO                                                                                                                                          
+  bool wa;                                                                                                                                           
+  bool wt = false;                                                                                                                                  
+  bool isLru;                                                                                                                                           
   int loadHits = 0;
   int loadMisses = 0;
   int storeHits = 0;
@@ -47,11 +37,9 @@ struct Cache {
   int totalLoads = 0;
   int totalStores = 0;
   int totalCycles = 0;
-  int currentTime;
 };
-//valid if there is data at that spot in cache
-//load time increases every load or store
-//accesstime - hits 
+
+
 void print(int loads, int stores, int loadHits, int loadMiss, int storeHit, int storeMiss, int totalCycles) {
   cout << "Total loads: " << loads << "\n";
   cout << "Total stores: " << stores << "\n";
@@ -60,7 +48,26 @@ void print(int loads, int stores, int loadHits, int loadMiss, int storeHit, int 
   cout << "Store hits: " << storeHit << "\n";
   cout << "Store misses: " << storeMiss << "\n";
   cout << "Total cycles: " << totalCycles << "\n";
-}                   
+}   
+
+int getMaxIndex(Cache & cache, unsigned int i, unsigned int blocks) {
+  if (blocks == (cache.sets.at(i).numBlocksFilled)) {
+    vector<Slot>::iterator it;
+    vector<Slot>::iterator max;
+    int maxIndex = 0;
+    int index = 0;
+    unsigned int maxLoadTime = 0;
+    for (it = cache.sets.at(i).blocks.begin(); it != cache.sets.at(i).blocks.end(); it++) {
+      if (cache.sets.at(i).blocks.at(index).loadTime > maxLoadTime) {
+        maxIndex = index;
+        maxLoadTime = cache.sets.at(i).blocks.at(index).loadTime;
+      }
+      index++;
+    }
+    return maxIndex;
+  }
+}
+
 bool powerOfTwo(int block) {
   if (block == 0)
       return 0;
@@ -75,6 +82,7 @@ bool powerOfTwo(int block) {
   }
   return 1;
 } 
+
 unsigned int bitCount(unsigned int num) {
   unsigned  int count = 0;
   while (num != 1) {
@@ -173,7 +181,6 @@ Slot::Slot (uint32_t tag, bool valid , bool dirty) : tag{tag}, valid{valid}, dir
     for (i = cache.sets.begin(); i != cache.sets.end(); ++i) {
       (*i).blocks.resize(blocks);
     }
-    string fullLine;
     while (cin >> readOrWrite) {
       unsigned int address;
       cin >> std::hex >> address;
@@ -184,8 +191,7 @@ Slot::Slot (uint32_t tag, bool valid , bool dirty) : tag{tag}, valid{valid}, dir
       if ((tagBits + offsetBits) == 32) {
           i = 0;
       }
-      if (readOrWrite.compare("l") == 0) { //load                                                                                                                     
-                                                                                                             
+      if (readOrWrite.compare("l") == 0) { //load                                                                                                                                                                                                                             
         (cache.totalLoads)++;
         Slot slot (t, true, false);
         slot.loadTime = 0;
@@ -193,33 +199,26 @@ Slot::Slot (uint32_t tag, bool valid , bool dirty) : tag{tag}, valid{valid}, dir
           cache.sets.at(i).blocks.at(0) = slot;
           (cache.sets.at(i).numBlocksFilled)++;
           (cache.loadMisses)++;
+          cache.totalCycles += cache.numBytes / 4 * 100;
         } else if (!(found(cache, t, i))) { //if not found in cache, add to cache   
+            cache.totalCycles += cache.numBytes / 4 * 100;
             vector<Slot>::iterator iterator;
             for (iterator = cache.sets.at(i).blocks.begin(); iterator != cache.sets.at(i).blocks.end(); ++iterator) {
-            if ((*iterator).valid == true) {
-              (*iterator).loadTime++;
-          }
-        }                                                                                
+              if ((*iterator).valid == true) {
+                (*iterator).loadTime++;
+              }
+            }                                                                                
           (cache.loadMisses)++;//hit = false;                                                                                                                      
-                //check if numBLocks excceeds num blocks per set                                                                                                      
+                //check if numBLocks excceeds num blocks per set      
+                //blocks, i, cache,  
+          unsigned int maxIndex = getMaxIndex(cache, i, blocks);                                                                                                
           if (blocks == (cache.sets.at(i).numBlocksFilled)) {
-            vector<Slot>::iterator it;
-            vector<Slot>::iterator max;
-            int maxIndex = 0;
-            int index = 0;
-            unsigned int maxLoadTime = 0;
-            for (it = cache.sets.at(i).blocks.begin(); it != cache.sets.at(i).blocks.end(); it++) {
-                if (cache.sets.at(i).blocks.at(index).loadTime > maxLoadTime) {
-                    maxIndex = index;
-                    maxLoadTime = cache.sets.at(i).blocks.at(index).loadTime;
-                }
-                    index++;
-            }
+            unsigned int maxIndex = getMaxIndex(cache, i, blocks);
             cache.sets.at(i).blocks.at(maxIndex) = slot;
           } else if (cache.sets.at(i).numBlocksFilled < blocks) {
-                cache.sets.at(i).blocks.at(cache.sets.at(i).numBlocksFilled) = slot;                                                                                 
-		(cache.sets.at(i).numBlocksFilled)++;
-	  }
+            cache.sets.at(i).blocks.at(cache.sets.at(i).numBlocksFilled) = slot;                                                                                 
+		        (cache.sets.at(i).numBlocksFilled)++;
+	        } 
         } else { //if it is found in cache                                                                                                                         
           if (found(cache, t, i)) {                                                                                                         
             (cache.loadHits)++;
@@ -227,25 +226,22 @@ Slot::Slot (uint32_t tag, bool valid , bool dirty) : tag{tag}, valid{valid}, dir
             if (isLruOrFifo) {
                 vector<Slot>::iterator iterator;
                 for (iterator = cache.sets.at(i).blocks.begin(); iterator != cache.sets.at(i).blocks.end(); iterator++) {
-                    (*iterator).loadTime++;
+                  (*iterator).loadTime++;
                 }
                   //if LRU, updated most recently accessed element                                                                                                                                                                                                                  
                 int numIndex = findIndex(cache, t, i);
                 cache.sets.at(i).blocks.at(numIndex).loadTime = 0;
             }
           }
-          cache.totalCycles += cache.numBytes / 4 * 100;
         }
       }	
       if (readOrWrite.compare("s") == 0) {  
-        //increase the time for every slot that has been added to set 
-        
-	  //(cache.sets.at(i).blocks.at(i).loadTime) = 0;
 	      (cache.totalStores)++;
 	      Slot slot (t, true, false);
 	      slot.loadTime = 0;
         if (!(found(cache, t, i))) {
           //for fifo and lru  
+          cache.totalCycles += cache.numBytes / 4 * 100;
           vector<Slot>::iterator storeIt;
           for (storeIt = cache.sets.at(i).blocks.begin(); storeIt != cache.sets.at(i).blocks.end(); storeIt++) {
             if ((*storeIt).valid == true) {
@@ -259,20 +255,7 @@ Slot::Slot (uint32_t tag, bool valid , bool dirty) : tag{tag}, valid{valid}, dir
 		//check if numBLocks excceeds num blocks per set                                                                 
             //CHECKING IF EVICTION IS NEEDED AND WHERE TO PUT IT (MAX TIME)
             if (blocks == (cache.sets.at(i).numBlocksFilled)) {
-		          vector<Slot>::iterator it;
-              vector<Slot>::iterator max;
-              int maxIndex = 0;
-              int index = 0;
-              unsigned int maxLoadTime = 0;
-              //find the slot with the highest load time and get the index
-		        for (it = cache.sets.at(i).blocks.begin(); it != cache.sets.at(i).blocks.end(); it++) {
-                      // int numIndex = findIndex(cache, t, i);                                                                                       
-              if (cache.sets.at(i).blocks.at(index).loadTime > maxLoadTime) {
-                maxIndex = index;
-                maxLoadTime = cache.sets.at(i).blocks.at(index).loadTime;
-              }
-              index++;
-            } 
+              unsigned int maxIndex = getMaxIndex(cache, i, blocks);
               //replacement/eviction              
               cache.sets.at(i).blocks.at(maxIndex) = slot;
                     //cache.sets.at(i).blocks.erase(max);       
@@ -283,17 +266,17 @@ Slot::Slot (uint32_t tag, bool valid , bool dirty) : tag{tag}, valid{valid}, dir
 		          }
             (cache.totalCycles) += 100 * cache.numBytes / 4; //calculate cycles
             (cache.totalCycles)++;
-		       if (cache.wt == true) {
+		        if (cache.wt == true) {
 		          cache.totalCycles += 100;
-		       }
+		        }
 		      }
 	     } else if (found(cache, t, i)) {//if found & already in cache
-       if (cache.wa) {
-	        (cache.storeHits)++;
-		      (cache.totalCycles)++;
-        if (cache.wt) {
-          (cache.totalCycles) += 100;
-        } else {
+         if (cache.wa) {
+	         (cache.storeHits)++;
+		       (cache.totalCycles)++;
+         if (cache.wt) {
+           (cache.totalCycles) += 100;
+         } else {
 		      int numIndex = findIndex(cache, t, i);
 		  //write only to cache and mark block as dirty
 		      cache.sets.at(i).blocks.at(numIndex).dirty = true;
@@ -303,7 +286,7 @@ Slot::Slot (uint32_t tag, bool valid , bool dirty) : tag{tag}, valid{valid}, dir
         for (iterator = cache.sets.at(i).blocks.begin(); iterator != cache.sets.at(i).blocks.end(); iterator++) {
           (*iterator).loadTime++;
         }
-        //if lru setting back to zero get 
+        //if lru setting slot loaded back to zero get 
 		    if (isLruOrFifo) {
 		      unsigned int numIndex = findIndex(cache, t, i);
           cache.sets.at(i).blocks.at(numIndex).loadTime = 0;

@@ -64,37 +64,7 @@ unsigned int bitCount(unsigned int num) {
    return count;
   //  return log2(num);
 }
-string hexCharToBinaryChar(char c)
-{
-   switch(toupper(c))
-    {
-        case '0': return "0000";
-        case '1': return "0001";
-        case '2': return "0010";
-        case '3': return "0011";
-        case '4': return "0100";
-        case '5': return "0101";
-        case '6': return "0110";
-        case '7': return "0111";
-        case '8': return "1000";
-        case '9': return "1001";
-        case 'A': return "1010";
-        case 'B': return "1011";
-        case 'C': return "1100";
-        case 'D': return "1101";
-        case 'E': return "1110";
-        case 'F': return "1111";
-    }
-}
 
-string hexStringToBinaryString(const string& hexString)
-{
-    // TODO use a loop from <algorithm> or smth
-    string binary;
-    for(int i = 0; i != hexString.length(); ++i)
-       binary += hexCharToBinaryChar(hexString[i]);
-    return binary;
-}
 void print(int loads, int stores, int loadHits, int loadMiss, int storeHit, int storeMiss, int totalCycles) {
     cout << "Total loads: " << loads << "\n";
     cout << "Total stores: " << stores << "\n";
@@ -145,8 +115,8 @@ bool found(Cache & c, unsigned int tag, unsigned int index) {
     }
     vector<Slot>::iterator it; //to check every element of cache
     //    for (it = c.sets.at(index).blocks.begin(); it != c.sets.at(index).blocks.end(); ++it) {
-    for (size_t i = 0; i < c.sets.at(index).blocks.size(); i++) {
-      if (((c.sets.at(index).blocks.at(i)).tag == tag) && ((c.sets.at(index).blocks.at(i)).valid == true)) {
+    for (size_t i = 0; i < c.numBlocks /*c.sets.at(index).blocks.size()*/; i++) {
+      if ((c.sets.at(index).blocks.at(i).tag == tag) && (c.sets.at(index).blocks.at(i).valid == true)) {
             return true;
         }
     }
@@ -236,39 +206,48 @@ int main(int argc, char *argv[]) {
 	  // (cache.sets.at(i).blocks.at(i).loadTime) = 0;
 	  vector<Slot>::iterator iterator;
           for (iterator = cache.sets.at(i).blocks.begin(); iterator != cache.sets.at(i).blocks.end(); ++iterator) {
+	    if ((*iterator).valid == true) {
 	    (*iterator).loadTime++;
 	  }
+
+	}
 	  (cache.sets.at(i).blocks.at(i).loadTime) = 0;
 	  //increase all others PLUS 1
             (cache.totalLoads)++;
-	    Slot slot (t, true, true);
+	    Slot slot (t, true, false);
 
             if (numLines == 0) {
                 //since cache is currently empty, add into cache
-                hit = false;
+                //hit = false;
 		(cache.sets.at(i).blocks).insert(cache.sets.at(i).blocks.begin(), slot);
 		(cache.sets.at(i).blocks).pop_back();
 		numLines++;
 		(cache.sets.at(i).numBlocksFilled)++;
 	        (cache.loadMisses)++; 
             } else if (!(found(cache, t, i))) { //if not found in cache, add to cache
-                hit = false;
+	      //hit = false;
 		//check if numBLocks excceeds num blocks per set
 		if (blocks == (cache.sets.at(i).numBlocksFilled)) {
 		  // if (isLruOrFifo == true) {
 		    vector<Slot>::iterator it;
 		    vector<Slot>::iterator max;
-		   for (it = cache.sets.at(i).blocks.begin(); it != cache.sets.at(i).blocks.end(); ++it) {
-		     unsigned int maxLoadTime = 0;
+		    int maxIndex = 0;
+		    int index = 0;
+		    for (it = cache.sets.at(i).blocks.begin(); it != cache.sets.at(i).blocks.end(); ++it) {
+		      index++;
+		      unsigned int maxLoadTime = 0;
 		      if ((cache.sets.at(i).blocks.at(i).loadTime) > maxLoadTime) {
-			max = it;
+			maxIndex = index;
+			
 		      }
 		    }
-		    cache.sets.at(i).blocks.erase(max);
+		    cache.sets.at(i).blocks.at(maxIndex) = slot;
+		    //cache.sets.at(i).blocks.erase(max);
+		} else if (cache.sets.at(i).numBlocksFilled < blocks) {
+		  cache.sets.at(i).blocks.at(cache.sets.at(i).numBlocksFilled) = slot;
 		}
-                (cache.sets.at(i).blocks).insert(cache.sets.at(i).blocks.begin(), slot);
-		(cache.sets.at(i).blocks).pop_back();
-                (cache.loadMisses)++;
+		
+		(cache.loadMisses)++;
 		(cache.sets.at(i).numBlocksFilled)++;
 	    } else { //if it is found in cache
                 if (found(cache, t, i)) {
@@ -276,11 +255,10 @@ int main(int argc, char *argv[]) {
                 (cache.loadHits)++;
                 (cache.totalCycles)++;
 
-
 		if (isLruOrFifo) {
 		  vector<Slot>::iterator iterator;
 
-		  for (iterator = cache.sets.at(i).blocks.begin(); iterator != cache.sets.at(i).blocks.end(); ++iterator) {
+		  for (iterator = cache.sets.at(i).blocks.begin(); iterator != cache.sets.at(i).blocks.end(); iterator++) {
 
 		    (*iterator).loadTime++;
 		  }
@@ -291,21 +269,21 @@ int main(int argc, char *argv[]) {
 		}
 		
 		}
-	       
-        cache.totalCycles += cache.numBytes / 4 * 100;   
-	 
+        cache.totalCycles += cache.numBytes / 4 * 100;   	 
 	    }
 	}
 	
         if (readOrWrite.compare("s") == 0) {  
           vector<Slot>::iterator storeIt;
           for (storeIt = cache.sets.at(i).blocks.begin(); storeIt != cache.sets.at(i).blocks.end(); ++storeIt) {
-            (*storeIt).loadTime++;
+            if ((*storeIt).valid == true) {
+	      (*storeIt).loadTime++;
+	    }
           }
 
 	  (cache.sets.at(i).blocks.at(i).loadTime) = 0;
 	  (cache.totalStores)++;
-	  Slot slot (t, true, true);
+	  Slot slot (t, true, false);
 
 	  
 	  if (numLines == 0) {
@@ -322,7 +300,7 @@ int main(int argc, char *argv[]) {
 		//check if numBLocks excceeds num blocks per set                                                                 
                 if (blocks == (cache.sets.at(i).numBlocksFilled)) {
                   // if (isLruOrFifo == true) {                                                                                                                                                                     
-                    vector<Slot>::iterator it;
+		  /*vector<Slot>::iterator it;
                     vector<Slot>::iterator max;
                    for (it = cache.sets.at(i).blocks.begin(); it != cache.sets.at(i).blocks.end(); ++it) {
                      unsigned int maxLoadTime = 0;
@@ -334,14 +312,34 @@ int main(int argc, char *argv[]) {
                 }
                 (cache.sets.at(i).blocks).insert(cache.sets.at(i).blocks.begin(), slot);
                 (cache.sets.at(i).blocks).pop_back();
-		(cache.sets.at(i).numBlocksFilled)++;
+		  */
+		    vector<Slot>::iterator it;
+                    vector<Slot>::iterator max;
+                    int maxIndex = 0;
+                    int index = 0;
+                    for (it = cache.sets.at(i).blocks.begin(); it != cache.sets.at(i).blocks.end(); ++it) {
+                      index++;
+                      unsigned int maxLoadTime = 0;
+                      if ((cache.sets.at(i).blocks.at(i).loadTime) > maxLoadTime) {
+                        maxIndex = index;
+                      }
+                    }
+                    cache.sets.at(i).blocks.at(maxIndex) = slot;
+                    //cache.sets.at(i).blocks.erase(max);                                                                         
+                } else if (cache.sets.at(i).numBlocksFilled < blocks) {
+                  cache.sets.at(i).blocks.at(cache.sets.at(i).numBlocksFilled) = slot;
+                }
+			
+	        (cache.sets.at(i).numBlocksFilled)++;
                     (cache.totalCycles) += 100 * cache.numBytes / 4; //calculate cycles
                     (cache.totalCycles)++;
 		    if (cache.wt == true) {
 		      cache.totalCycles += 100;
+		    } else { //IDK
+		      cache.sets.at(i).blocks.at(cache.sets.at(i).numBlocksFilled - 1).dirty = true;
 		    }
-		    
 		}
+		
             } else if (found(cache, t, i)) {  //if found & already in cache
                 (cache.storeHits)++;
 		(cache.totalCycles)++;
@@ -369,7 +367,7 @@ int main(int argc, char *argv[]) {
 	  }
         }
     numLines++; //to track number of lines read from trace file
-    cache.numBytes = bytes; //update numBytes
+    //cache.numBytes = bytes; //update numBytes
 	
      	}
     

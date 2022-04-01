@@ -123,6 +123,20 @@ bool found(Cache & c, unsigned int tag, unsigned int index) {
     return false;
 }
 
+unsigned int findIndex(Cache & c, unsigned int tag, unsigned int index) {
+      vector<Slot>::iterator it; //to check every element of cache                                                                   
+    //    for (it = c.sets.at(index).blocks.begin(); it != c.sets.at(index).blocks.end(); ++it) {
+      int foundIndex = -1;
+      int tracker = 0;
+    for (size_t i = 0; i < c.numBlocks /*c.sets.at(index).blocks.size()*/; i++) {
+      if ((c.sets.at(index).blocks.at(i).tag == tag) && (c.sets.at(index).blocks.at(i).valid == true)) {
+	foundIndex = tracker;
+        }
+      tracker++;
+    }
+
+}
+
 Cache::Cache(int numSets,int numBlocks,int  numBytes,bool  wa,bool  wt,bool  isLru) : numSets{numSets}, numBlocks{numBlocks}, numBytes{numBytes}, wa{wa}, wt{wt}, isLru{isLru} {}
 Slot::Slot (int tag, bool valid , bool dirty) : tag{tag}, valid{valid}, dirty{dirty} {} 
 int main(int argc, char *argv[]) {
@@ -194,8 +208,12 @@ int main(int argc, char *argv[]) {
       unsigned int address;
       cin >> std::hex >> address;
       uint32_t i = (address << tagBits) >> (tagBits + offsetBits);
-      uint32_t t = (address >> tagBits) & 0xFFFF;
-     //(indexBits + offsetBits)) & ((1 << tagBits) -1);
+      //uint32_t t = (address >> tagBits) & 0xFFFF;
+      //TO TEST
+      //i = i % (cache.numBlocks);
+
+      uint32_t t = address & ((1 << tagBits) - 1);
+      //(indexBits + offsetBits)) & ((1 << tagBits) -1);
       // uint32_t t = ((1 << tagBits) - 1) & (address >> (32 - tagBits));
       string extra;
       cin >> extra;
@@ -211,11 +229,12 @@ int main(int argc, char *argv[]) {
 	  }
 
 	}
-	  (cache.sets.at(i).blocks.at(i).loadTime) = 0;
+	  //(cache.sets.at(i).blocks.at(i).loadTime) = 0;
 	  //increase all others PLUS 1
             (cache.totalLoads)++;
 	    Slot slot (t, true, false);
-
+	    slot.loadTime = 0;
+	    
             if (numLines == 0) {
                 //since cache is currently empty, add into cache
                 //hit = false;
@@ -225,7 +244,7 @@ int main(int argc, char *argv[]) {
 		(cache.sets.at(i).numBlocksFilled)++;
 	        (cache.loadMisses)++; 
             } else if (!(found(cache, t, i))) { //if not found in cache, add to cache
-	      //hit = false;
+	      (cache.loadMisses)++;//hit = false;
 		//check if numBLocks excceeds num blocks per set
 		if (blocks == (cache.sets.at(i).numBlocksFilled)) {
 		  // if (isLruOrFifo == true) {
@@ -234,12 +253,13 @@ int main(int argc, char *argv[]) {
 		    int maxIndex = 0;
 		    int index = 0;
 		    for (it = cache.sets.at(i).blocks.begin(); it != cache.sets.at(i).blocks.end(); ++it) {
-		      index++;
+	      
 		      unsigned int maxLoadTime = 0;
 		      if ((cache.sets.at(i).blocks.at(i).loadTime) > maxLoadTime) {
 			maxIndex = index;
-			
+			maxLoadTime = cache.sets.at(i).blocks.at(i).loadTime;
 		      }
+		      index++;
 		    }
 		    cache.sets.at(i).blocks.at(maxIndex) = slot;
 		    //cache.sets.at(i).blocks.erase(max);
@@ -247,7 +267,7 @@ int main(int argc, char *argv[]) {
 		  cache.sets.at(i).blocks.at(cache.sets.at(i).numBlocksFilled) = slot;
 		}
 		
-		(cache.loadMisses)++;
+		//(cache.loadMisses)++;
 		(cache.sets.at(i).numBlocksFilled)++;
 	    } else { //if it is found in cache
                 if (found(cache, t, i)) {
@@ -259,11 +279,16 @@ int main(int argc, char *argv[]) {
 		  vector<Slot>::iterator iterator;
 
 		  for (iterator = cache.sets.at(i).blocks.begin(); iterator != cache.sets.at(i).blocks.end(); iterator++) {
-
 		    (*iterator).loadTime++;
 		  }
+		  //if LRU, updated most recently accessed element
 
-		  (cache.sets.at(i).blocks.at(i).loadTime) = 0;
+		  //ERROR IS HERE USE FINDINDEX METHOD
+		   int numIndex	= (cache.sets.at(i).numBlocksFilled) - 2;
+                   cache.sets.at(i).blocks.at(numIndex).loadTime = 0;
+
+		  
+		  //(cache.sets.at(i).blocks.at(cache.sets.at(i).(numBlocksFilled - 1).loadTime) = 0;
 		  //increase all others PLUS 1
 		  //(cache.totalLoads)++;
 		}
@@ -273,6 +298,7 @@ int main(int argc, char *argv[]) {
 	    }
 	}
 	
+	
         if (readOrWrite.compare("s") == 0) {  
           vector<Slot>::iterator storeIt;
           for (storeIt = cache.sets.at(i).blocks.begin(); storeIt != cache.sets.at(i).blocks.end(); ++storeIt) {
@@ -281,9 +307,10 @@ int main(int argc, char *argv[]) {
 	    }
           }
 
-	  (cache.sets.at(i).blocks.at(i).loadTime) = 0;
+	  //(cache.sets.at(i).blocks.at(i).loadTime) = 0;
 	  (cache.totalStores)++;
 	  Slot slot (t, true, false);
+	  slot.loadTime = 0;
 
 	  
 	  if (numLines == 0) {
@@ -335,9 +362,9 @@ int main(int argc, char *argv[]) {
                     (cache.totalCycles)++;
 		    if (cache.wt == true) {
 		      cache.totalCycles += 100;
-		    } else { //IDK
+		    } /*else { //IDK
 		      cache.sets.at(i).blocks.at(cache.sets.at(i).numBlocksFilled - 1).dirty = true;
-		    }
+		      }*/
 		}
 		
             } else if (found(cache, t, i)) {  //if found & already in cache
@@ -350,15 +377,23 @@ int main(int argc, char *argv[]) {
 		  cache.sets.at(i).blocks.at(0).dirty = true;
 		}
 
-		if (isLruOrFifo) {
                   vector<Slot>::iterator iterator;
 
                   for (iterator = cache.sets.at(i).blocks.begin(); iterator != cache.sets.at(i).blocks.end(); ++iterator) {
 
                     (*iterator).loadTime++;
-                  }
+                  
 
-                  (cache.sets.at(i).blocks.at(i).loadTime) = 0;
+		                    //if LRU, updated most recently accessed element                                                                  
+                  //(cache.sets.at(i).blocks.at(cache.sets.at(i).blocks.at(cache.sets.at(i).numBlocksFilled - 1).loadTime) = 0;
+
+
+		  if (isLruOrFifo) {
+		    int numIndex = (cache.sets.at(i).numBlocksFilled) - 1;
+		   cache.sets.at(i).blocks.at(numIndex).loadTime = 0;
+
+		      }
+		      //(cache.sets.at(i).blocks.at(i).loadTime) = 0;
                   //increase all others PLUS 1                                                                             
                   //(cache.totalStores)++;
 

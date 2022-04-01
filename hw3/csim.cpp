@@ -165,7 +165,6 @@ Slot::Slot (uint32_t tag, bool valid , bool dirty) : tag{tag}, valid{valid}, dir
     int offsetBits = bitCount(bytes);
     int indexBits = bitCount(sets);
     int tagBits = 32 - offsetBits - indexBits;
-
     int numLines = 0;
     int countSlotPerSets = 0;
     Cache cache(sets,blocks, bytes, writeAllocate, writeThrough, isLruOrFifo);
@@ -186,32 +185,30 @@ Slot::Slot (uint32_t tag, bool valid , bool dirty) : tag{tag}, valid{valid}, dir
           i = 0;
       }
       if (readOrWrite.compare("l") == 0) { //load                                                                                                                     
-        vector<Slot>::iterator iterator;
-        for (iterator = cache.sets.at(i).blocks.begin(); iterator != cache.sets.at(i).blocks.end(); ++iterator) {
-          if ((*iterator).valid == true) {
-            (*iterator).loadTime++;
-          }
-        }                                                                                                       
+                                                                                                             
         (cache.totalLoads)++;
         Slot slot (t, true, false);
         slot.loadTime = 0;
         if (numLines == 0) {                                                                                                      
           cache.sets.at(i).blocks.at(0) = slot;
-          //numLines++;
           (cache.sets.at(i).numBlocksFilled)++;
           (cache.loadMisses)++;
-        } else if (!(found(cache, t, i))) { //if not found in cache, add to cache                                                                                  
+        } else if (!(found(cache, t, i))) { //if not found in cache, add to cache   
+            vector<Slot>::iterator iterator;
+            for (iterator = cache.sets.at(i).blocks.begin(); iterator != cache.sets.at(i).blocks.end(); ++iterator) {
+            if ((*iterator).valid == true) {
+              (*iterator).loadTime++;
+          }
+        }                                                                                
           (cache.loadMisses)++;//hit = false;                                                                                                                      
                 //check if numBLocks excceeds num blocks per set                                                                                                      
           if (blocks == (cache.sets.at(i).numBlocksFilled)) {
-                  // if (isLruOrFifo == true) {                                                                                                                       
             vector<Slot>::iterator it;
             vector<Slot>::iterator max;
             int maxIndex = 0;
             int index = 0;
+            unsigned int maxLoadTime = 0;
             for (it = cache.sets.at(i).blocks.begin(); it != cache.sets.at(i).blocks.end(); it++) {
-                unsigned int maxLoadTime = 0;
-                      // int numIndex = findIndex(cache, t, i);                                                                                                       
                 if (cache.sets.at(i).blocks.at(index).loadTime > maxLoadTime) {
                     maxIndex = index;
                     maxLoadTime = cache.sets.at(i).blocks.at(index).loadTime;
@@ -219,13 +216,10 @@ Slot::Slot (uint32_t tag, bool valid , bool dirty) : tag{tag}, valid{valid}, dir
                     index++;
             }
             cache.sets.at(i).blocks.at(maxIndex) = slot;
-                    //cache.sets.at(i).blocks.erase(max);                                                                                                             
           } else if (cache.sets.at(i).numBlocksFilled < blocks) {
                 cache.sets.at(i).blocks.at(cache.sets.at(i).numBlocksFilled) = slot;                                                                                 
 		(cache.sets.at(i).numBlocksFilled)++;
 	  }
-                //(cache.loadMisses)++;                                                                                                                               
-	  //  (cache.sets.at(i).numBlocksFilled)++;
         } else { //if it is found in cache                                                                                                                         
           if (found(cache, t, i)) {                                                                                                         
             (cache.loadHits)++;
@@ -235,54 +229,58 @@ Slot::Slot (uint32_t tag, bool valid , bool dirty) : tag{tag}, valid{valid}, dir
                 for (iterator = cache.sets.at(i).blocks.begin(); iterator != cache.sets.at(i).blocks.end(); iterator++) {
                     (*iterator).loadTime++;
                 }
-                  //if LRU, updated most recently accessed element                                                                                                    
-                  //ERROR IS HERE USE FINDINDEX METHOD                                                                                                                
+                  //if LRU, updated most recently accessed element                                                                                                                                                                                                                  
                 int numIndex = findIndex(cache, t, i);
-                  // int numIndex       = (cache.sets.at(i).numBlocksFilled) - 2;                                                                                     
                 cache.sets.at(i).blocks.at(numIndex).loadTime = 0;
             }
-
           }
           cache.totalCycles += cache.numBytes / 4 * 100;
         }
       }	
       if (readOrWrite.compare("s") == 0) {  
-        vector<Slot>::iterator storeIt;
-        for (storeIt = cache.sets.at(i).blocks.begin(); storeIt != cache.sets.at(i).blocks.end(); ++storeIt) {
-          if ((*storeIt).valid == true) {
-	          (*storeIt).loadTime++;
-	        }
-        }
+        //increase the time for every slot that has been added to set 
+        
 	  //(cache.sets.at(i).blocks.at(i).loadTime) = 0;
 	      (cache.totalStores)++;
 	      Slot slot (t, true, false);
 	      slot.loadTime = 0;
-        if (!(found(cache, t, i))) { //if not found
+        if (!(found(cache, t, i))) {
+          //for fifo and lru  
+          vector<Slot>::iterator storeIt;
+          for (storeIt = cache.sets.at(i).blocks.begin(); storeIt != cache.sets.at(i).blocks.end(); storeIt++) {
+            if ((*storeIt).valid == true) {
+	            (*storeIt).loadTime++;
+	          }
+          } //if not found
           (cache.storeMisses)++;
           if (cache.wa == false) {
             cache.totalCycles += 100;
           } else if (cache.wa == true) {
 		//check if numBLocks excceeds num blocks per set                                                                 
+            //CHECKING IF EVICTION IS NEEDED AND WHERE TO PUT IT (MAX TIME)
             if (blocks == (cache.sets.at(i).numBlocksFilled)) {
 		          vector<Slot>::iterator it;
               vector<Slot>::iterator max;
               int maxIndex = 0;
               int index = 0;
-		        for (it = cache.sets.at(i).blocks.begin(); it != cache.sets.at(i).blocks.end(); it++) {
               unsigned int maxLoadTime = 0;
+              //find the slot with the highest load time and get the index
+		        for (it = cache.sets.at(i).blocks.begin(); it != cache.sets.at(i).blocks.end(); it++) {
                       // int numIndex = findIndex(cache, t, i);                                                                                       
               if (cache.sets.at(i).blocks.at(index).loadTime > maxLoadTime) {
                 maxIndex = index;
                 maxLoadTime = cache.sets.at(i).blocks.at(index).loadTime;
               }
               index++;
-            }
+            } 
+              //replacement/eviction              
               cache.sets.at(i).blocks.at(maxIndex) = slot;
-                    //cache.sets.at(i).blocks.erase(max);                                                                         
+                    //cache.sets.at(i).blocks.erase(max);       
+            //adding if eviction is not needed                                                                    
             } else if (cache.sets.at(i).numBlocksFilled < blocks) {
               cache.sets.at(i).blocks.at(cache.sets.at(i).numBlocksFilled) = slot;
 		          (cache.sets.at(i).numBlocksFilled)++;          
-		}
+		          }
             (cache.totalCycles) += 100 * cache.numBytes / 4; //calculate cycles
             (cache.totalCycles)++;
 		       if (cache.wt == true) {
@@ -290,6 +288,7 @@ Slot::Slot (uint32_t tag, bool valid , bool dirty) : tag{tag}, valid{valid}, dir
 		       }
 		      }
 	     } else if (found(cache, t, i)) {//if found & already in cache
+       if (cache.wa) {
 	        (cache.storeHits)++;
 		      (cache.totalCycles)++;
         if (cache.wt) {
@@ -299,29 +298,26 @@ Slot::Slot (uint32_t tag, bool valid , bool dirty) : tag{tag}, valid{valid}, dir
 		  //write only to cache and mark block as dirty
 		      cache.sets.at(i).blocks.at(numIndex).dirty = true;
 	    	}
+        // increasing all other load times 
         vector<Slot>::iterator iterator;
-        for (iterator = cache.sets.at(i).blocks.begin(); iterator != cache.sets.at(i).blocks.end(); ++iterator) {
+        for (iterator = cache.sets.at(i).blocks.begin(); iterator != cache.sets.at(i).blocks.end(); iterator++) {
           (*iterator).loadTime++;
         }
-		                    //if LRU, updated most recently accessed element                                                                  
-                  //(cache.sets.at(i).blocks.at(cache.sets.at(i).blocks.at(cache.sets.at(i).numBlocksFilled - 1).loadTime) = 0;
+        //if lru setting back to zero get 
 		    if (isLruOrFifo) {
 		      unsigned int numIndex = findIndex(cache, t, i);
           cache.sets.at(i).blocks.at(numIndex).loadTime = 0;
-		  }
+		    }
+      } else {
+         cache.totalCycles++;
+        }
  	  }				
-	  }
+	}
     numLines++; //to track number of lines read from trace file
-    //cache.numBytes = bytes; //update numBytes
-	
-     	}
-    
-
+  }
     //print output
     print(cache.totalLoads, cache.totalStores, cache.loadHits, cache.loadMisses, cache.storeHits, cache.storeMisses, cache.totalCycles);
-        
     return 0;
-
 }
 
  

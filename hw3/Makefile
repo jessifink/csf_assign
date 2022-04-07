@@ -1,17 +1,20 @@
-CPP_SRCS = main.cpp
-CPPFLAGS = -g -O2 -Wall -Wextra -pedantic -std=c++11
-%.o : %.c
-	g++ $(CPPFLAGS) -cpp $<
+CXX = g++
+CXXFLAGS = -g -Wall -Wextra -pedantic -std=c++14
 
-all: csim
+OBJS = magic.o elf_names.o
 
-csim : csim.o 
-	g++ -o $@ csim.o 
+%.o : %.cpp
+	$(CXX) $(CXXFLAGS) -c $*.cpp -o $*.o
 
-.PHONY: solution.zip
-solution.zip :
-	rm -f solution.zip
-	zip -9r $@ Makefile csim.cpp *.h README.txt
+magic : $(OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $(OBJS)
+
+magic.o : magic.cpp elf_names.h
+
+elf_names.o : elf_names.cpp elf_names.h
+
+solution.zip : Makefile magic.cpp elf_names.cpp elf_names.h README.txt
+	zip -9r $@ Makefile magic.cpp elf_names.cpp elf_names.h README.txt
 
 clean :
-	rm -f *.o csim
+	rm -f *.o magic solution.zip

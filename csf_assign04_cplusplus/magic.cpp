@@ -57,22 +57,22 @@ int main(int argc, char **argv) {
   }
 
 
-  Elf64_Shdr * section_header = (Elf64_Shdr *) (elf_base + elf_base->e_shoff);
-  Elf64_Shdr * sh_string_table = (Elf64_Shdr *) (elf_base + elf_base->e_shstrndx);
+  Elf64_Shdr * section_header = (Elf64_Shdr *) (data + elf_base->e_shoff);
+  Elf64_Shdr * sh_string_table = (Elf64_Shdr *) (section_header + elf_base->e_shstrndx);
   //Elf64_Shdr * sh_string_table = section_header + elf_base->e_shstrndx;
   
   for (uint16_t i = 0; i < elf_base->e_shnum; i++) {
    std::cout << "Section header " << i << ": name=";
-   //FIX THIS 
-   //std::cout << sh_string_table[i].sh_name;
-   //std::cout << (sh_string_table + sh_string_table->sh_offset + sh_string_table->sh_name);
+   std::cout << (char*) (data + sh_string_table->sh_offset + section_header[i].sh_name);
    
    std::cout << ", type=";
+   std::cout << section_header[i].sh_type;
 
    std::cout << ", offset=";
+   printf("%lx", section_header[i].sh_offset);
 
    std::cout << ", size=";
-
+   printf("%lx", section_header[i].sh_size);
    std::cout << "\n";
    
    

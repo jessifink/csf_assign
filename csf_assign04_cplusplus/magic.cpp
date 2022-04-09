@@ -37,7 +37,9 @@ int main(int argc, char **argv) {
     // ...
   }
   void *data = mmap(NULL, file_size, PROT_READ, MAP_PRIVATE, fd, 0);
- 
+  Elf64_Ehdr* elf_base = (Elf64_Ehdr*) data;
+  elf_base += elf_base->e_shoff;
+  Elf64_Shdr* elf_index = (Elf64_Shdr*) elf_base;
   //determine whether file is ELF file or not and print output
   //if ELF file, summarize and exit
   return 0;

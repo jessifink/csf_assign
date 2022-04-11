@@ -22,6 +22,7 @@ int main(int argc, char **argv) {
   }
 
 
+  //store filename
   char *  filename = argv[1];
 
   //use mmap to map data to memory
@@ -40,13 +41,16 @@ int main(int argc, char **argv) {
     file_size = statbuf.st_size;
   }
 
+
   void *data = mmap(NULL, file_size, PROT_READ, MAP_PRIVATE, fd, 0);
    if (data == (void*)-1) {  // If pointer points to memory region inaccessible to program
     std::cerr << "ERROR: mapped to inaccessible memory region" << std::endl;
     return 4;
   }
   Elf64_Ehdr *elf_base = (Elf64_Ehdr*) data;
-    if (elf_base->e_ident[0] != 127 ||
+
+  //check if ELF File
+  if (elf_base->e_ident[0] != 127 ||
       elf_base->e_ident[1] != 69 ||
       elf_base->e_ident[2] != 76 ||
       elf_base->e_ident[3] != 70) {  
@@ -69,19 +73,18 @@ int main(int argc, char **argv) {
 
   Elf64_Shdr * section_header = (Elf64_Shdr *) (data + elf_base->e_shoff);
   Elf64_Shdr * sh_string_table = (Elf64_Shdr *) (section_header + elf_base->e_shstrndx);
-  //Elf64_Shdr * sh_string_table = section_header + elf_base->e_shstrndx;
   unsigned char* str_tab_data;
   Elf64_Sym* sym_table;
   int sym_counter;
 
 
+  //Print Section summary
   for (uint16_t i = 0; i < elf_base->e_shnum; i++) {
     std::cout << "Section header " << i << ": name=";
     std::cout << (char*) (data + sh_string_table->sh_offset + section_header[i].sh_name);
    
     std::cout << ", type=";
     printf("%lx", section_header[i].sh_type);
-    //std::cout << section_header[i].sh_type;
 
     std::cout << ", offset=";
     printf("%lx", section_header[i].sh_offset);
@@ -90,6 +93,8 @@ int main(int argc, char **argv) {
     printf("%lx", section_header[i].sh_size);
     std::cout << "\n";
     std::string name = (char*) (data + sh_string_table->sh_offset + section_header[i].sh_name);
+    
+    //store strtab and symtab
     std::string strtab = ".strtab";
     std::string symtab = ".symtab";
     if (symtab.compare(name) == 0) {
@@ -100,24 +105,26 @@ int main(int argc, char **argv) {
     }
   }
 
-     for (int j = 0; j < sym_counter; j++) {
-      std::cout << "Symbol " << j; 
-      if (sym_table->st_name != 0) {
-        std::cout << ": name=";
-        std::cout <<  (unsigned char*) ( sym_table->st_name + str_tab_data);
-      } else {
-         std::cout << ": name=";
-      }
-  
-      std::cout << ", size=";
-      printf("%lx", sym_table->st_size);
-      std::cout << ", info=";
-      printf("%lx", (long unsigned int) sym_table->st_info);
-      std::cout << ", other=";
-      printf("%lx", (long unsigned int) sym_table->st_other);
-      std::cout << "\n";
-      sym_table++;
+  //print symbol summary
+  for (int j = 0; j < sym_counter; j++) {
+    std::cout << "Symbol " << j; 
+    if (sym_table->st_name != 0) {
+      std::cout << ": name=";
+      std::cout <<  (unsigned char*) ( sym_table->st_name + str_tab_data);
+    } else {
+      std::cout << ": name=";
     }
+  
+    std::cout << ", size=";
+    printf("%lx", sym_table->st_size);
+    std::cout << ", info=";
+    printf("%lx", (long unsigned int) sym_table->st_info);
+    std::cout << ", other=";
+    printf("%lx", (long unsigned int) sym_table->st_other);
+    std::cout << "\n";
+    sym_table++;
+  }
 
+  //return
   return 0;
 }

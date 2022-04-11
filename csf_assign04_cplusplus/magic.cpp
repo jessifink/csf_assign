@@ -80,7 +80,8 @@ int main(int argc, char **argv) {
     std::cout << (char*) (data + sh_string_table->sh_offset + section_header[i].sh_name);
    
     std::cout << ", type=";
-    std::cout << section_header[i].sh_type;
+    printf("%lx", section_header[i].sh_type);
+    //std::cout << section_header[i].sh_type;
 
     std::cout << ", offset=";
     printf("%lx", section_header[i].sh_offset);

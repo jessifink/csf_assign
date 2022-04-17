@@ -43,7 +43,7 @@ int main(int argc, char **argv) {
 
 
   void *data = mmap(NULL, file_size, PROT_READ, MAP_PRIVATE, fd, 0);
-   if (data == (void*)-1) {  // If pointer points to memory region inaccessible to program
+   if (data == (void*)-1) { 
     std::cerr << "ERROR: mapped to inaccessible memory region" << std::endl;
     return 4;
   }

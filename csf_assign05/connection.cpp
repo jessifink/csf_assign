@@ -13,10 +13,14 @@ Connection::Connection()
 Connection::Connection(int fd)
   : m_fd(fd)
   , m_last_result(SUCCESS) {
+    rio_readinitb(&m_fdbuf, fd); 
   // TODO: call rio_readinitb to initialize the rio_t object
 }
 
 void Connection::connect(const std::string &hostname, int port) {
+  //how to convert into to char aray
+ // m_fd = open_clientfd(hostname.c_str(), port); 
+  rio_readinitb(&m_fdbuf, m_fd); 
   // TODO: call open_clientfd to connect to the server
   // TODO: call rio_readinitb to initialize the rio_t object
 }

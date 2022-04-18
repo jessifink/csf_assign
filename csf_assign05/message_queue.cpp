@@ -3,6 +3,7 @@
 #include "message_queue.h"
 
 MessageQueue::MessageQueue() {
+  
   // TODO: initialize the mutex and the semaphore
 }
 

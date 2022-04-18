@@ -23,6 +23,15 @@ struct Message {
   // split using ':' as the separator
   std::vector<std::string> split_payload() const {
     std::vector<std::string> result;
+    int index = 0; 
+    for (int i = 0; i = data.length(); i++) {
+      std::string msg;
+      if (data[i] == ':') {
+        msg = data.substr(index, i);
+        index = i + 1;
+        result.push_back(msg);
+      }
+    }
     // TODO: split the message data into fields separated by ':', add them
     //       to result vector
     return result;

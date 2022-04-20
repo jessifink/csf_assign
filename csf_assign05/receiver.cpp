@@ -23,7 +23,49 @@ int main(int argc, char **argv) {
   if (!conn.is_open()) {
     //ERROR
   }
-  Message msg;
+
+  Message send_msg(TAG_RLOGIN, username);
+  conn.send(send_msg);
+  Message ok_msg(TAG_OK, username);
+  conn.receive(ok_msg);
+
+  Message recieve_msg(TAG_JOIN, room_name);
+  conn.send(recieve_msg);
+  Message ok_msg2(TAG_OK, room_name);
+  conn.receive(ok_msg2);
+
+  Message msg(TAG_EMPTY, "");
+  //how do you recieve the message/maintain the loop
+
+  while (conn.receive(msg)) { //is this right
+    //using split_payload
+    //delivery:[room]:[sender]:[message]
+    //print [username of sender]: [message text]
+
+  }
+
+
+
+
+
+
+
+  //send rlogin (TAG_RLOGIN)
+  //first send username
+  //recieve message
+  //send another to join room
+  //recieve message
+  //send roomname
+  //recieve msg
+
+  //loop is recieve and dealing w message
+  //recieve(connection, message);
+
+  //then start loop
+  //in loop send msg
+  
+
+/*
   conn.receive(msg);
   std::string word; 
   while (std::cin >> word) {
@@ -39,6 +81,7 @@ int main(int argc, char **argv) {
     }
 
   }
+  */
 
   // TODO: connect to server
 

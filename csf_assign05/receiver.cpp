@@ -24,27 +24,37 @@ int main(int argc, char **argv) {
     //ERROR
   }
 
+  //send rlogin msg as first message
   Message send_msg(TAG_RLOGIN, username);
   conn.send(send_msg);
   Message ok_msg(TAG_OK, username);
-  conn.receive(ok_msg);
-
-  Message recieve_msg(TAG_JOIN, room_name);
-  conn.send(recieve_msg);
+  Message err_msg(TAG_ERR, username);
+  if (conn.recieve(err_msg)) {
+      stderr << "Login Error\n";
+  }
+  if (conn.get_last_result() == true) {
+    std::cerr << "Login Error\n";
+    conn.send(Message(TAG_QUIT, "quit"));
+  }
+  conn.send(Message(TAG_JOIN, room_name));
   Message ok_msg2(TAG_OK, room_name);
   conn.receive(ok_msg2);
 
-  Message msg(TAG_EMPTY, "");
+
+  Message msg(TAG_DELIVERY, "");
   //how do you recieve the message/maintain the loop
 
-  while (conn.receive(msg)) { //is this right
+  while (conn.get_last_result != EOF_OR_ERROR) { //is this right
+    conn.receive(msg);
+    std::vector message = msg.split_payload();
+    std::cout << message.at(1) << ":" << message.at(2) << "\n";
+
     //using split_payload
     //delivery:[room]:[sender]:[message]
     //print [username of sender]: [message text]
 
   }
-
-
+  conn.close();
 
 
 

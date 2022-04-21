@@ -30,6 +30,7 @@ int main(int argc, char **argv) {
   conn.send(Message(TAG_SLOGIN, username));
   Message ok_msg(TAG_OK, username);
   conn.receive(ok_msg);
+  
   std::string word;
   while (std::cin >> word) {
     if (word.compare("/join") == 0) {

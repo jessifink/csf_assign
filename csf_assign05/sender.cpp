@@ -25,42 +25,58 @@ int main(int argc, char **argv) {
   Connection conn;
   conn.connect(server_hostname, server_port);
   if (!conn.is_open()) {
+    std::cerr << "Connection Failed\n";
+    return 1;
     //ERROR
   }
+
   conn.send(Message(TAG_SLOGIN, username));
   Message ok_msg(TAG_OK, username);
   conn.receive(ok_msg);
-  
+  if (!conn.receive(ok_msg)) {
+    if (conn.get_last_result() == Connection::INVALID_MSG) {
+      std::cerr << "Invalid Message";
+      return 1;
+    } else if (conn.get_last_result() == Connection::EOF_OR_ERROR) {
+      std::cerr << "Invalid Message";
+      return 1;
+    }
+}
+
   std::string word;
-  while (std::cin >> word) {
-    if (word.compare("/join") == 0) {
-      std::string room_name;
-      std::cin >> room_name;
-      conn.send(Message(TAG_JOIN, room_name));
-      ok_msg.data = room_name;
+  while (std::cin >> word) { 
+    Message input(TAG_OK, word);
+    std::vector<std::string> words = input.split_payload();
+    std::string command = words.at(0);
+    std::string payload = words.at(1);
+
+    if (command.compare("/join") == 0) {
+      conn.send(Message(TAG_JOIN, payload));
       conn.receive(ok_msg);
+      if (ok_msg.tag == TAG_ERR) {
+        std::cerr << "Join Error:" << payload << "\n";
+      }
+    } else if (command.compare("/leave") == 0) {
+      conn.send(Message(TAG_LEAVE, payload));
+      conn.receive(ok_msg);
+      if (ok_msg.tag == TAG_ERR) {
+        std::cerr << "Other Error: " << payload << "\n";
+      }
+    } else if (command.compare("/quit") == 0) {
+      conn.send(Message(TAG_QUIT, payload));
+      conn.receive(ok_msg);
+      if (ok_msg.tag == TAG_ERR) {
+        std::cerr << "Other Error: " << payload << "\n";
+      }
+      return 1;
+    } else if (command.compare("/sendall") == 0) {
+      conn.send(Message(TAG_SENDALL, payload));
+      conn.receive(ok_msg);
+      if (ok_msg.tag == TAG_ERR) {
+        std::cerr << "Other Error: " << payload << "\n";
+      }
     }
-
-    std::string text;
-    std::cin >> text;
-    conn.send(Message(TAG_SENDALL, text));
-    ok_msg.data = text;
-    conn.receive(ok_msg);
-
-    if (word.compare("/leave") == 0) {
-
-   
-    }
-
-
-    
-
-
-
-
-
   }
-
 
   //send rlogin (TAG_RLOGIN)
   //first send username
@@ -69,22 +85,6 @@ int main(int argc, char **argv) {
   //recieve message
   //then start loop
   //in loop send msg
-
-  
-  while (std::cin >> word) {
-    if (word.compare("/leave") == 0) {
-      conn.send(Message(TAG_QUIT, username));
-      //if room is null send msg back saying not in room
-      //else remove user from room and send msg saying has left room
-
-    } else if (word.compare("/quit")== 0) {
-      conn.send(Message(TAG_LEAVE, username));
-      // quit the program
-    } else if (word.substr(0,5).compare("./join") == 0) {
-      conn.send(Message(TAG_JOIN, username));
-    } else {
-      std::cerr << "ERROR"; 
-    }
   /* - read in the line then check if it is join message or leave  or quit rlogin
 join
 sendall
@@ -92,8 +92,6 @@ leave
 ok
 err 
 */
-
-
 
   // TODO: connect to server
 

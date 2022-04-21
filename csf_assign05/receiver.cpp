@@ -20,40 +20,51 @@ int main(int argc, char **argv) {
 
   Connection conn;
   conn.connect(server_hostname, server_port);
+  std::cout << "line 23";
   if (!conn.is_open()) {
-    //ERROR
+    std::cerr << "Connection Failed\n";
+    return 1;//ERROR
   }
 
   //send rlogin msg as first message
   Message send_msg(TAG_RLOGIN, username);
   conn.send(send_msg);
   Message ok_msg(TAG_OK, username);
-  Message err_msg(TAG_ERR, username);
-  if (conn.recieve(err_msg)) {
-      stderr << "Login Error\n";
+  //Message err_msg(TAG_ERR, username);
+
+  if (!conn.receive(ok_msg)) {
+  if (conn.get_last_result() == Connection::INVALID_MSG) {
+    std::cerr << "Invalid Message";
+  } else if (conn.get_last_result() == Connection::EOF_OR_ERROR) {
+    std::cerr << "Invalid Message";
   }
-  if (conn.get_last_result() == true) {
-    std::cerr << "Login Error\n";
-    conn.send(Message(TAG_QUIT, "quit"));
-  }
+}
+
   conn.send(Message(TAG_JOIN, room_name));
-  Message ok_msg2(TAG_OK, room_name);
-  conn.receive(ok_msg2);
+  Message receive_msg(TAG_EMPTY, "");
+  conn.receive(receive_msg);
+  if (receive_msg.tag == TAG_OK) {
+    while (conn.get_last_result() != conn.EOF_OR_ERROR) { //is this right
+    Message msg (TAG_EMPTY, "");
+    conn.receive(msg);
+
+    std::vector<std::string> msg_vec = msg.split_payload();
+    std::cout << msg_vec.at(0) << ":" << msg_vec.at(1) << "\n";
+
+    //using split_payload
+    //delivery:[room]:[sender]:[message]
+    //print [username of sender]: [message text]
+    }
+  } else if (receive_msg.tag == TAG_ERR) {
+    std::cerr << "Join Error\n";
+  }
+
 
 
   Message msg(TAG_DELIVERY, "");
   //how do you recieve the message/maintain the loop
 
-  while (conn.get_last_result != EOF_OR_ERROR) { //is this right
-    conn.receive(msg);
-    std::vector message = msg.split_payload();
-    std::cout << message.at(1) << ":" << message.at(2) << "\n";
 
-    //using split_payload
-    //delivery:[room]:[sender]:[message]
-    //print [username of sender]: [message text]
-
-  }
   conn.close();
 
 

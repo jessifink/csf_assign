@@ -21,7 +21,8 @@ void Connection::connect(const std::string &hostname, int port) {
   //how to convert into to char aray
   //convert to char array using stringstream
   if (m_fd >= 0) {
-    m_fd = open_clientfd(hostname.c_str(), port); 
+    std::string port_str = std::to_string(port);
+    m_fd = open_clientfd(hostname.c_str(), port_str.c_str()); 
   rio_readinitb(&m_fdbuf, m_fd); 
   }
  
@@ -37,6 +38,9 @@ Connection::~Connection() {
 }
 
 bool Connection::is_open() const {
+  if (m_fd < 0 ) {
+    //how to check bytes 
+  }
   //first check if m_fd < 0
   //check if still open by checking number of written bytes vs expected bytes to be written
 
@@ -54,6 +58,10 @@ void Connection::close() {
 
 bool Connection::send(const Message &msg) {
   if (is_open()) {
+    std::stringstream ss; 
+    ss << msg.tag << ":" << msg.data; 
+    std::string message = ss.str(); 
+    return rio_writen(m_fd, message.c_str(), message.length()); 
     //put messagetag:messagedata to a stringstream
     //use rio_write_n to write message
     //use return value of ^^ to check if success
@@ -66,6 +74,10 @@ bool Connection::send(const Message &msg) {
 }
 
 bool Connection::receive(Message &msg) {
+    std::stringstream ss; 
+    ss << msg.tag << ":" << msg.data; 
+    std::string message = ss.str(); 
+    return rio_readn(m_fd, message.c_str(), message.length()); 
     //put messagetag:messagedata to a stringstream
     //use rio_read_n to write message
     //use return value of ^^ to check if success

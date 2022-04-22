@@ -35,29 +35,33 @@ int main(int argc, char **argv) {
   if (!conn.receive(ok_msg)) {
   if (conn.get_last_result() == Connection::INVALID_MSG) {
     std::cerr << "Invalid Message";
+    return 1;
   } else if (conn.get_last_result() == Connection::EOF_OR_ERROR) {
     std::cerr << "Invalid Message";
+    return 1;
   }
 }
 
   conn.send(Message(TAG_JOIN, room_name));
   Message receive_msg(TAG_EMPTY, "");
-  conn.receive(receive_msg);
-  if (receive_msg.tag == TAG_OK) {
-    while (conn.get_last_result() != conn.EOF_OR_ERROR) { //is this right
-    Message msg (TAG_EMPTY, "");
-    conn.receive(msg);
+  /*conn.receive(receive_msg);
+  if (receive_msg.tag == TAG_OK) {*/
+  while (conn.receive(receive_msg)) { //is this right
+    if (receive_msg.tag == TAG_OK) {
+      Message msg (TAG_EMPTY, "");
+      conn.receive(msg);
 
-    std::vector<std::string> msg_vec = msg.split_payload();
-    std::cout << msg_vec.at(0) << ":" << msg_vec.at(1) << "\n";
+      std::vector<std::string> msg_vec = msg.split_payload();
+      std::cout << msg_vec.at(0) << ":" << msg_vec.at(1) << "\n";
 
-    //using split_payload
-    //delivery:[room]:[sender]:[message]
-    //print [username of sender]: [message text]
+      //using split_payload
+      //delivery:[room]:[sender]:[message]
+      //print [username of sender]: [message text]
+    } else if (receive_msg.tag == TAG_ERR) {
+      std::cerr << "Join Error\n";
     }
-  } else if (receive_msg.tag == TAG_ERR) {
-    std::cerr << "Join Error\n";
   }
+   
 
 
 

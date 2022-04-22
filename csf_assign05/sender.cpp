@@ -43,9 +43,9 @@ int main(int argc, char **argv) {
     }
 }
 
-  std::string word;
-  while (std::cin >> word) { 
-    Message input(TAG_OK, word);
+  char * line;
+  while (line = fgets(line, 4000, stdin)) { 
+    Message input(TAG_OK, line);
     std::vector<std::string> words = input.split_payload();
     std::string command = words.at(0);
     std::string payload = words.at(1);

@@ -65,9 +65,9 @@ bool Connection::send(const Message &msg) {
     ss << msg.tag << ":" << msg.data; 
     std::string message = ss.str(); 
     const char * c_str = message.c_str();
-    void * msg_str = &c_str;
+    //void * msg_str = &c_str;
     
-    if (rio_writen(m_fd, msg_str, sizeof(msg_str)) == -1) {
+    if (rio_writen(m_fd, c_str, sizeof(c_str)) == -1) {
       m_last_result == EOF_OR_ERROR;
       return false;
     }
@@ -86,16 +86,45 @@ bool Connection::send(const Message &msg) {
 }
 
 bool Connection::receive(Message &msg) {
-    std::stringstream ss; 
+    /*std::stringstream ss; 
     ss << msg.tag << ":" << msg.data; 
     std::string message = ss.str(); 
     const char * c_str = message.c_str();
-    void * msg_str = &c_str;
+*/
 
-    if (rio_readn(m_fd, msg_str, sizeof(msg_str)) == -1) {
-      m_last_result == EOF_OR_ERROR;
-      return false;
+    char str[msg.MAX_LEN];
+    //void * msg_str = &c_str;
+    int n = Rio_readlineb(&m_fdbuf, str, msg.MAX_LEN);
+    //if this fails, error. non pisitive n
+    if (n < 0) {
+      //error
     }
+    //break line by colons
+    //store into msg
+
+    std::vector<std::string> result;
+    std::string string = str;
+    int index = 0; 
+    for (int i = 0; i = string.length(); i++) {
+      std::string msg;
+      if (string[i] == ':') {
+        std::string tag = string.substr(index, i);
+        //index = i + 1;
+        result.push_back(tag);
+        std::string payload = string.substr(i);
+        result.push_back(payload);
+      }
+      //if something wrong with msg format - no colon, tag formatted incorrectly
+    }
+
+    msg.tag = result.at(0);
+    msg.data = result.at(1);
+
+
+    /*if (Rio_readlineb(&m_fd, str, sizeof(msg_str)) == -1) {
+      m_last_result = EOF_OR_ERROR;
+      return false;
+    }*/
     m_last_result = SUCCESS;
     return true;
 

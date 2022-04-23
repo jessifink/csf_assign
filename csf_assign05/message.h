@@ -32,6 +32,8 @@ struct Message {
         result.push_back(msg);
       }
     }
+    std::string end = data.substr(index);
+    result.push_back(end);
     // TODO: split the message data into fields separated by ':', add them
     //       to result vector
     return result;

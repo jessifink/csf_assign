@@ -12,7 +12,6 @@ int main(int argc, char **argv) {
     std::cerr << "Usage: ./receiver [server_address] [port] [username] [room]\n";
     return 1;
   }
-  std::cout << "maroon";
 
   std::string server_hostname = argv[1];
   int server_port = std::stoi(argv[2]);
@@ -45,18 +44,12 @@ int main(int argc, char **argv) {
 //
   conn.send(Message(TAG_JOIN, room_name));
   Message receive_msg(TAG_DELIVERY, "");
-  std::cout << "mmm:" + Message(TAG_JOIN, room_name).data;
   /*conn.receive(receive_msg);
   if (receive_msg.tag == TAG_OK) {*/
-  while (conn.receive(receive_msg)) { //is this right
-  std::cout << "purple";
-    if (receive_msg.tag == TAG_OK) {
-      std::cout << "navy";
-      Message msg (TAG_EMPTY, "");
-      conn.receive(msg);
-
-      std::vector<std::string> msg_vec = msg.split_payload();
-      std::cout << msg_vec.at(0) << ":" << msg_vec.at(1) << "\n";
+  while (1) { //is this right
+  conn.receive(receive_msg);
+    if (receive_msg.tag == TAG_DELIVERY) {
+      std::cout << receive_msg.tag << ":" << receive_msg.data << "\n";
 
       //using split_payload
       //delivery:[room]:[sender]:[message]

@@ -1,9 +1,8 @@
-#include <iostream> // comment out !!!
-#include <string> //comment out later !!!!!
 #include <sstream>
-
+#include <iostream>
 #include <cctype>
 #include <cassert>
+#include <stdexcept>
 #include "csapp.h"
 #include "message.h"
 #include "connection.h"
@@ -61,19 +60,17 @@ void Connection::close() {
     close();
   }
 }
-//look over send and recieve 
+
 bool Connection::send(const Message &msg) {
- // if (is_open()) {
+  if (is_open()) {
     std::stringstream ss; 
     ss << msg.tag << ":" << msg.data; 
     std::string message = ss.str(); 
     const char * c_str = message.c_str();
-    void * msg_str = &c_str;
-     std::cout << "red: " + message;
-     
-    if (rio_writen(m_fd, msg_str, sizeof(message) == -1) {
+    //void * msg_str = &c_str;
+    
+    if (rio_writen(m_fd, c_str, message.length()) == -1) {
       m_last_result = EOF_OR_ERROR;
-      std::cout << "orange";
       return false;
     }
     m_last_result = SUCCESS;
@@ -88,33 +85,31 @@ bool Connection::send(const Message &msg) {
   // TODO: send a message
   // return true if successful, false if not
   // make sure that m_last_result is set appropriately
-
+}
 
 bool Connection::receive(Message &msg) {
-    std::stringstream ss; 
-    ss << msg.tag << ":" << msg.data; 
-    std::string message = ss.str(); 
-    const char * c_str = message.c_str();
-    void * msg_str = &c_str;
-    std::cout << "yellow";
-    if (rio_readn(m_fd, msg_str, sizeof(msg_str)) == -1) {
-      m_last_result = EOF_OR_ERROR;
-      std::cout << "green";
-      return false;
+    char str[msg.MAX_LEN];
+    //void * msg_str = &c_str;
+    int n = Rio_readlineb(&m_fdbuf, str, msg.MAX_LEN);
+    //std::cout << str;
+    //if this fails, error. non pisitive n
+    if (n < 0) {
+      //std::cerr << "ERROR";
+      return 1;
     }
-    std::cout << "blue";
+    std::string string = str;
+    std::string result;
+    int index = 0; 
+    for (int i = 0; i == string.length(); i++) {
+      if (string[i] == ':') {
+        msg.tag = string.substr(index, i);
+        index = i + 1;
+      }
+    }
+      msg.data = string.substr(index,string.length());
+      //if something wrong with msg format - no colon, tag formatted incorrectly
+
     m_last_result = SUCCESS;
     return true;
 }
-
-    //return rio_readn(m_fd, msg_str, message.length()); 
-    //put messagetag:messagedata to a stringstream
-    //use rio_read_n to write message
-    //use return value of ^^ to check if success
-    //if so, return true else false
-
-
-  // TODO: send a message, storing its tag and data in msg
-  // return true if successful, false if not
-  // make sure that m_last_result is set appropriately
 

@@ -1,4 +1,7 @@
+#include <iostream> // comment out !!!
+#include <string> //comment out later !!!!!
 #include <sstream>
+
 #include <cctype>
 #include <cassert>
 #include "csapp.h"
@@ -58,17 +61,19 @@ void Connection::close() {
     close();
   }
 }
-
+//look over send and recieve 
 bool Connection::send(const Message &msg) {
-  if (is_open()) {
+ // if (is_open()) {
     std::stringstream ss; 
     ss << msg.tag << ":" << msg.data; 
     std::string message = ss.str(); 
     const char * c_str = message.c_str();
     void * msg_str = &c_str;
-    
-    if (rio_writen(m_fd, msg_str, sizeof(msg_str)) == -1) {
-      m_last_result == EOF_OR_ERROR;
+     std::cout << "red: " + message;
+     
+    if (rio_writen(m_fd, msg_str, sizeof(message) == -1) {
+      m_last_result = EOF_OR_ERROR;
+      std::cout << "orange";
       return false;
     }
     m_last_result = SUCCESS;
@@ -83,7 +88,7 @@ bool Connection::send(const Message &msg) {
   // TODO: send a message
   // return true if successful, false if not
   // make sure that m_last_result is set appropriately
-}
+
 
 bool Connection::receive(Message &msg) {
     std::stringstream ss; 
@@ -91,13 +96,16 @@ bool Connection::receive(Message &msg) {
     std::string message = ss.str(); 
     const char * c_str = message.c_str();
     void * msg_str = &c_str;
-
+    std::cout << "yellow";
     if (rio_readn(m_fd, msg_str, sizeof(msg_str)) == -1) {
-      m_last_result == EOF_OR_ERROR;
+      m_last_result = EOF_OR_ERROR;
+      std::cout << "green";
       return false;
     }
+    std::cout << "blue";
     m_last_result = SUCCESS;
     return true;
+}
 
     //return rio_readn(m_fd, msg_str, message.length()); 
     //put messagetag:messagedata to a stringstream
@@ -109,4 +117,4 @@ bool Connection::receive(Message &msg) {
   // TODO: send a message, storing its tag and data in msg
   // return true if successful, false if not
   // make sure that m_last_result is set appropriately
-}
+

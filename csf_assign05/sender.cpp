@@ -12,6 +12,7 @@ int main(int argc, char **argv) {
     std::cerr << "Usage: ./sender [server_address] [port] [username]\n";
     return 1;
   }
+  
 
   std::string server_hostname;
   int server_port;
@@ -20,7 +21,6 @@ int main(int argc, char **argv) {
   server_hostname = argv[1];
   server_port = std::stoi(argv[2]);
   username = argv[3];
-  int fd = 2;
   //int file_desc = open_clientfd(server_hostname, server_port); 
   Connection conn;
   conn.connect(server_hostname, server_port);
@@ -31,9 +31,20 @@ int main(int argc, char **argv) {
   }
 
   conn.send(Message(TAG_SLOGIN, username));
-  Message ok_msg(TAG_OK, username);
-  conn.receive(ok_msg);
-  if (!conn.receive(ok_msg)) {
+  Message ok_msg;
+conn.receive(ok_msg);
+if (ok_msg.tag == TAG_ERR) {
+        std::cerr << "Join Error: \n";
+      }
+
+  //std::cout << "uuuuu " + username;
+  //Message ok_msg(TAG_OK, username);
+  //std::cout << "uuuuu " + ok_msg.data;
+  //conn.receive(ok_msg);
+
+  std::cout << "pear";
+  //if (!conn.receive(ok_msg)) {
+    if (ok_msg.tag.compare(TAG_OK) != 0) {
     if (conn.get_last_result() == Connection::INVALID_MSG) {
       std::cerr << "Invalid Message";
       return 1;
@@ -42,20 +53,25 @@ int main(int argc, char **argv) {
       return 1;
     }
 }
+    std::cerr << "hello";
 
   char * line;
-  while (line = fgets(line, 4000, stdin)) { 
+  //what size should this be 
+  Message empty_message(TAG_EMPTY, "");
+  while (fgets(line, empty_message.MAX_LEN, stdin)) { 
+        std::cout << "peace";
+
     Message input(TAG_OK, line);
     std::vector<std::string> words = input.split_payload();
     std::string command = words.at(0);
     std::string payload = words.at(1);
-
     if (command.compare("/join") == 0) {
       conn.send(Message(TAG_JOIN, payload));
       conn.receive(ok_msg);
       if (ok_msg.tag == TAG_ERR) {
         std::cerr << "Join Error:" << payload << "\n";
       }
+      std::cout << "apple";
     } else if (command.compare("/leave") == 0) {
       conn.send(Message(TAG_LEAVE, payload));
       conn.receive(ok_msg);
@@ -68,10 +84,12 @@ int main(int argc, char **argv) {
       if (ok_msg.tag == TAG_ERR) {
         std::cerr << "Other Error: " << payload << "\n";
       }
+      std::cout << "mango";
       return 1;
     } else if (command.compare("/sendall") == 0) {
       conn.send(Message(TAG_SENDALL, payload));
       conn.receive(ok_msg);
+      //check if tag is ok @831
       if (ok_msg.tag == TAG_ERR) {
         std::cerr << "Other Error: " << payload << "\n";
       }

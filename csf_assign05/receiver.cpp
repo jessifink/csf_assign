@@ -12,6 +12,7 @@ int main(int argc, char **argv) {
     std::cerr << "Usage: ./receiver [server_address] [port] [username] [room]\n";
     return 1;
   }
+  std::cout << "maroon";
 
   std::string server_hostname = argv[1];
   int server_port = std::stoi(argv[2]);
@@ -20,7 +21,6 @@ int main(int argc, char **argv) {
 
   Connection conn;
   conn.connect(server_hostname, server_port);
-  std::cout << "line 23";
   if (!conn.is_open()) {
     std::cerr << "Connection Failed\n";
     return 1;//ERROR
@@ -41,13 +41,17 @@ int main(int argc, char **argv) {
     return 1;
   }
 }
-
+//when to use tag delivery 
+//
   conn.send(Message(TAG_JOIN, room_name));
-  Message receive_msg(TAG_EMPTY, "");
+  Message receive_msg(TAG_DELIVERY, "");
+  std::cout << "mmm:" + Message(TAG_JOIN, room_name).data;
   /*conn.receive(receive_msg);
   if (receive_msg.tag == TAG_OK) {*/
   while (conn.receive(receive_msg)) { //is this right
+  std::cout << "purple";
     if (receive_msg.tag == TAG_OK) {
+      std::cout << "navy";
       Message msg (TAG_EMPTY, "");
       conn.receive(msg);
 
@@ -65,7 +69,7 @@ int main(int argc, char **argv) {
 
 
 
-  Message msg(TAG_DELIVERY, "");
+  //Message msg(TAG_DELIVERY, "");
   //how do you recieve the message/maintain the loop
 
 
@@ -90,23 +94,6 @@ int main(int argc, char **argv) {
   //in loop send msg
   
 
-/*
-  conn.receive(msg);
-  std::string word; 
-  while (std::cin >> word) {
-    if (word.compare("/leave") == 0) {
-      conn.send(Message(TAG_QUIT, username));
-    } else if (word.compare("/quit")== 0) {
-      conn.send(Message(TAG_LEAVE, username));
-// quit the program
-    } else if (word.substr(0,5).compare("./join") == 0) {
-      conn.send(Message(TAG_JOIN, username));
-    } else {
-      std::cerr << "ERROR"; 
-    }
-
-  }
-  */
 
   // TODO: connect to server
 

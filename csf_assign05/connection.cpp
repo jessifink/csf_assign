@@ -64,7 +64,7 @@ void Connection::close() {
 bool Connection::send(const Message &msg) {
   if (is_open()) {
     std::stringstream ss; 
-    ss << msg.tag << ":" << msg.data; 
+    ss << msg.tag << ":" << msg.data << "\n"; 
     std::string message = ss.str(); 
     const char * c_str = message.c_str();
     //void * msg_str = &c_str;

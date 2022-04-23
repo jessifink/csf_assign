@@ -6,7 +6,7 @@
 #include "message.h"
 #include "connection.h"
 #include "client_util.h"
-
+//quit and reciever 
 int main(int argc, char **argv) {
   if (argc != 4) {
     std::cerr << "Usage: ./sender [server_address] [port] [username]\n";
@@ -52,60 +52,48 @@ int main(int argc, char **argv) {
    std::string command;
    std::stringstream ss;
    ss << str;
-   ss >> command >> payload;
+   ss >> command; 
+   std::cout << "red";
     if (command.compare("/join") == 0) {
+      ss >> payload;
       conn.send(Message(TAG_JOIN, payload));
       conn.receive(ok_msg);
+      std::cout << "orange";
       if (ok_msg.tag == TAG_ERR) {
         std::cerr << "Join Error:" << payload << "\n";
+        conn.close();
+        return 1;
       }
     } else if (command.compare("/leave") == 0) {
-      conn.send(Message(TAG_LEAVE, payload));
+      conn.send(Message(TAG_LEAVE, ""));
       conn.receive(ok_msg);
+            std::cout << "yellow";
+
       if (ok_msg.tag == TAG_ERR) {
         std::cerr << "Other Error: " << payload << "\n";
       }
     } else if (command.compare("/quit") == 0) {
-      conn.send(Message(TAG_QUIT, payload));
+      std::cout << "magenta";
+      conn.send(Message(TAG_QUIT, ""));
+      std::cout << "maroon";
       conn.receive(ok_msg);
       if (ok_msg.tag == TAG_ERR) {
         std::cerr << "Other Error: " << payload << "\n";
       }
+            std::cout << "blue";
       //close connection
       conn.close();
       return 1;
-    } else { //(command.compare("/sendall") == 0) {
-      conn.send(Message(TAG_SENDALL, command));
+    } else { 
+      conn.send(Message(TAG_SENDALL, str));
       conn.receive(ok_msg);
+            std::cout << "purple";
+
       if (ok_msg.tag == TAG_ERR) {
         std::cerr << "Other Error: " << payload << "\n";
       }
     }
   }
-
   conn.close();
-
-  //send rlogin (TAG_RLOGIN)
-  //first send username
-  //recieve message
-  //send another to join room
-  //recieve message
-  //then start loop
-  //in loop send msg
-  /* - read in the line then check if it is join message or leave  or quit rlogin
-join
-sendall
-leave
-ok
-err 
-*/
-
-  // TODO: connect to server
-
-  // TODO: send slogin message
-
-  // TODO: loop reading commands from user, sending messages to
-  //       server as appropriate
-
   return 0;
 }

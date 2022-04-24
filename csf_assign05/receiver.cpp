@@ -12,6 +12,7 @@ int main(int argc, char **argv) {
     std::cerr << "Usage: ./receiver [server_address] [port] [username] [room]\n";
     return 1;
   }
+  std::cout<< "hello";
 
   std::string server_hostname = argv[1];
   int server_port = std::stoi(argv[2]);
@@ -20,7 +21,6 @@ int main(int argc, char **argv) {
 
   Connection conn;
   conn.connect(server_hostname, server_port);
-  std::cout << "line 23";
   if (!conn.is_open()) {
     std::cerr << "Connection Failed\n";
     return 1;//ERROR
@@ -29,7 +29,8 @@ int main(int argc, char **argv) {
   //send rlogin msg as first message
   Message send_msg(TAG_RLOGIN, username);
   conn.send(send_msg);
-  Message ok_msg(TAG_OK, username);
+  Message ok_msg;
+  conn.receive(ok_msg);
   //Message err_msg(TAG_ERR, username);
 
   if (!conn.receive(ok_msg)) {
@@ -41,23 +42,19 @@ int main(int argc, char **argv) {
     return 1;
   }
 }
-
+  Message msg;
   conn.send(Message(TAG_JOIN, room_name));
-  Message receive_msg(TAG_EMPTY, "");
+  conn.receive(msg);
   /*conn.receive(receive_msg);
   if (receive_msg.tag == TAG_OK) {*/
-  while (conn.receive(receive_msg)) { //is this right
-    if (receive_msg.tag == TAG_OK) {
-      Message msg (TAG_EMPTY, "");
-      conn.receive(msg);
-
-      std::vector<std::string> msg_vec = msg.split_payload();
-      std::cout << msg_vec.at(0) << ":" << msg_vec.at(1) << "\n";
-
-      //using split_payload
-      //delivery:[room]:[sender]:[message]
-      //print [username of sender]: [message text]
-    } else if (receive_msg.tag == TAG_ERR) {
+  while (1) { //is this right
+  conn.receive(msg);
+  std::cout << msg.tag;
+    if (msg.tag == TAG_SENDALL) {
+      msg.tag = TAG_DELIVERY;
+      std::cout << msg.tag << ":" << room_name << ":" << username << ":" <<msg.data << "\n";
+//help with this 
+    } else if (msg.tag == TAG_ERR) {
       std::cerr << "Join Error\n";
     }
   }
@@ -65,7 +62,7 @@ int main(int argc, char **argv) {
 
 
 
-  Message msg(TAG_DELIVERY, "");
+  //Message msg(TAG_DELIVERY, "");
   //how do you recieve the message/maintain the loop
 
 
@@ -90,23 +87,6 @@ int main(int argc, char **argv) {
   //in loop send msg
   
 
-/*
-  conn.receive(msg);
-  std::string word; 
-  while (std::cin >> word) {
-    if (word.compare("/leave") == 0) {
-      conn.send(Message(TAG_QUIT, username));
-    } else if (word.compare("/quit")== 0) {
-      conn.send(Message(TAG_LEAVE, username));
-// quit the program
-    } else if (word.substr(0,5).compare("./join") == 0) {
-      conn.send(Message(TAG_JOIN, username));
-    } else {
-      std::cerr << "ERROR"; 
-    }
-
-  }
-  */
 
   // TODO: connect to server
 

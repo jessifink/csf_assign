@@ -6,7 +6,7 @@
 #include "message.h"
 #include "connection.h"
 #include "client_util.h"
-
+//quit and reciever 
 int main(int argc, char **argv) {
   if (argc != 4) {
     std::cerr << "Usage: ./sender [server_address] [port] [username]\n";
@@ -20,7 +20,6 @@ int main(int argc, char **argv) {
   server_hostname = argv[1];
   server_port = std::stoi(argv[2]);
   username = argv[3];
-  int fd = 2;
   //int file_desc = open_clientfd(server_hostname, server_port); 
   Connection conn;
   conn.connect(server_hostname, server_port);
@@ -31,7 +30,7 @@ int main(int argc, char **argv) {
   }
 
   conn.send(Message(TAG_SLOGIN, username));
-  Message ok_msg(TAG_OK, username);
+  Message ok_msg;
   conn.receive(ok_msg);
   if (!conn.receive(ok_msg)) {
     if (conn.get_last_result() == Connection::INVALID_MSG) {
@@ -43,62 +42,58 @@ int main(int argc, char **argv) {
     }
 }
 
-  char * line;
-  while (line = fgets(line, 4000, stdin)) { 
-    Message input(TAG_OK, line);
-    std::vector<std::string> words = input.split_payload();
-    std::string command = words.at(0);
-    std::string payload = words.at(1);
-
+  while (1) { 
+   //getline()
+   //if call fails break out of function
+   //line = fgets(line, 4000, stdin)
+   std::string str;
+   getline(std::cin, str);
+   std::string payload;
+   std::string command;
+   std::stringstream ss;
+   ss << str;
+   ss >> command; 
+   std::cout << "red";
     if (command.compare("/join") == 0) {
+      ss >> payload;
       conn.send(Message(TAG_JOIN, payload));
       conn.receive(ok_msg);
+      std::cout << "orange";
       if (ok_msg.tag == TAG_ERR) {
         std::cerr << "Join Error:" << payload << "\n";
+        conn.close();
+        return 1;
       }
     } else if (command.compare("/leave") == 0) {
-      conn.send(Message(TAG_LEAVE, payload));
+      conn.send(Message(TAG_LEAVE, ""));
       conn.receive(ok_msg);
+            std::cout << "yellow";
+
       if (ok_msg.tag == TAG_ERR) {
         std::cerr << "Other Error: " << payload << "\n";
       }
     } else if (command.compare("/quit") == 0) {
-      conn.send(Message(TAG_QUIT, payload));
+      std::cout << "magenta";
+      conn.send(Message(TAG_QUIT, ""));
+      std::cout << "maroon";
       conn.receive(ok_msg);
       if (ok_msg.tag == TAG_ERR) {
         std::cerr << "Other Error: " << payload << "\n";
       }
+            std::cout << "blue";
+      //close connection
+      conn.close();
       return 1;
-    } else if (command.compare("/sendall") == 0) {
-      conn.send(Message(TAG_SENDALL, payload));
+    } else { 
+      conn.send(Message(TAG_SENDALL, str));
       conn.receive(ok_msg);
+            std::cout << "purple";
+
       if (ok_msg.tag == TAG_ERR) {
         std::cerr << "Other Error: " << payload << "\n";
       }
     }
   }
-
-  //send rlogin (TAG_RLOGIN)
-  //first send username
-  //recieve message
-  //send another to join room
-  //recieve message
-  //then start loop
-  //in loop send msg
-  /* - read in the line then check if it is join message or leave  or quit rlogin
-join
-sendall
-leave
-ok
-err 
-*/
-
-  // TODO: connect to server
-
-  // TODO: send slogin message
-
-  // TODO: loop reading commands from user, sending messages to
-  //       server as appropriate
-
+  conn.close();
   return 0;
 }

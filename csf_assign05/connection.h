@@ -43,6 +43,8 @@ public:
 
   Result get_last_result() const { return m_last_result; }
 
+  bool checkTagError(const char * toFind);
+
 private:
   // prohibit value semantics
   Connection(const Connection &);

@@ -20,26 +20,32 @@ int main(int argc, char **argv) {
   server_hostname = argv[1];
   server_port = std::stoi(argv[2]);
   username = argv[3];
-  //int file_desc = open_clientfd(server_hostname, server_port); 
   Connection conn;
   conn.connect(server_hostname, server_port);
   if (!conn.is_open()) {
     std::cerr << "Connection Failed\n";
     return 1;
-    //ERROR
   }
 
   conn.send(Message(TAG_SLOGIN, username));
   Message ok_msg;
   conn.receive(ok_msg);
   if (!conn.receive(ok_msg)) {
+    if (ok_msg.tag == TAG_ERR) {
+      std::cout << ok_msg.data << "\n";
+      conn.close();
+      return 1;
+    }
+
+  /*
     if (conn.get_last_result() == Connection::INVALID_MSG) {
       std::cerr << "Invalid Message";
       return 1;
     } else if (conn.get_last_result() == Connection::EOF_OR_ERROR) {
       std::cerr << "Invalid Message";
       return 1;
-    }
+    }*/
+
 }
 
   while (1) { 
@@ -54,43 +60,39 @@ int main(int argc, char **argv) {
    ss << str;
    ss >> command; 
    std::cout << "red";
-    if (command.compare("/join") == 0) {
-      ss >> payload;
-      conn.send(Message(TAG_JOIN, payload));
-      conn.receive(ok_msg);
-      std::cout << "orange";
-      if (ok_msg.tag == TAG_ERR) {
-        std::cerr << "Join Error:" << payload << "\n";
-        conn.close();
-        return 1;
-      }
-    } else if (command.compare("/leave") == 0) {
+  if (command.compare("/join") == 0) {
+    ss >> payload;
+    conn.send(Message(TAG_JOIN, payload));
+    conn.receive(ok_msg);
+    std::cout << "orange";
+    if (ok_msg.tag == TAG_ERR) {
+      std::cerr << payload << "\n";
+    }
+  } else if (command.compare("/leave") == 0) {
       conn.send(Message(TAG_LEAVE, ""));
       conn.receive(ok_msg);
-            std::cout << "yellow";
-
+      std::cout << "yellow";
       if (ok_msg.tag == TAG_ERR) {
-        std::cerr << "Other Error: " << payload << "\n";
+        std::cerr << payload << "\n";
       }
-    } else if (command.compare("/quit") == 0) {
+  } else if (command.compare("/quit") == 0) {
       std::cout << "magenta";
       conn.send(Message(TAG_QUIT, ""));
       std::cout << "maroon";
       conn.receive(ok_msg);
-      if (ok_msg.tag == TAG_ERR) {
-        std::cerr << "Other Error: " << payload << "\n";
+    if (ok_msg.tag == TAG_ERR) {
+        std::cerr << payload << "\n";
       }
-            std::cout << "blue";
-      //close connection
+      std::cout << "blue";
       conn.close();
-      return 1;
-    } else { 
+      return 0;
+  } else { 
       conn.send(Message(TAG_SENDALL, str));
       conn.receive(ok_msg);
             std::cout << "purple";
 
       if (ok_msg.tag == TAG_ERR) {
-        std::cerr << "Other Error: " << payload << "\n";
+        std::cerr << payload << "\n";
       }
     }
   }

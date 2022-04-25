@@ -30,7 +30,6 @@ int main(int argc, char **argv) {
   conn.send(Message(TAG_SLOGIN, username));
   Message ok_msg;
   bool res = conn.receive(ok_msg);
-  if (!res) {
     if (ok_msg.tag == TAG_ERR) {
       std::cout << ok_msg.data << "\n";
       conn.close();
@@ -46,10 +45,9 @@ int main(int argc, char **argv) {
       return 1;
     }*/
 
-  }
+
 
   while (1) { 
-   //getline()
    std::string str;
    getline(std::cin, str);
    std::string payload;
@@ -64,7 +62,7 @@ int main(int argc, char **argv) {
     conn.receive(ok_msg);
     //std::cout << "orange";
     if (ok_msg.tag == TAG_ERR) {
-      std::cerr << payload  << "\n";
+      std::cerr << ok_msg.data  << "\n";
     }
   } else if (command.compare("/leave") == 0) {
       conn.send(Message(TAG_LEAVE, ""));
@@ -79,7 +77,7 @@ int main(int argc, char **argv) {
       //std::cout << "maroon";
       conn.receive(ok_msg);
     if (ok_msg.tag == TAG_ERR) {
-        std::cerr << payload << "\n";
+        std::cerr << "bye" << "\n";
       }
     //std::cout << "blue";
     //conn.close();
@@ -87,10 +85,8 @@ int main(int argc, char **argv) {
   } else { 
       conn.send(Message(TAG_SENDALL, str));
       conn.receive(ok_msg);
-      //std::cout << "purple";
-
       if (ok_msg.tag == TAG_ERR) {
-        std::cerr << payload << "\n";
+	std::cerr << payload << "\n";
       }
     }
   }

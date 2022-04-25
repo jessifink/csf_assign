@@ -60,7 +60,7 @@ bool Connection::send(const Message &msg) {
     std::string message = ss.str(); 
     const char * c_str = message.c_str();
     
-    if (checkTagError(msg.tag.c_str())) {
+    if (checkTagError(msg.tag.c_str()) == true) {
         std::cerr << "Error: Tag not found";
         m_last_result = INVALID_MSG;
         return false;
@@ -79,6 +79,7 @@ bool Connection::receive(Message &msg) {
     char str[msg.MAX_LEN];
     int n = Rio_readlineb(&m_fdbuf, str, msg.MAX_LEN);
     if (n < 0) {
+      m_last_result = EOF_OR_ERROR;
       //std::cerr << "ERROR";
       return false;
     }
@@ -92,7 +93,7 @@ bool Connection::receive(Message &msg) {
         msg.tag = string.substr(index, i);
         index = i + 1;
 
-        if (checkTagError(msg.tag.c_str())) {
+        if (checkTagError(msg.tag.c_str()) == true) {
           std::cerr << "Error: Tag not found";
           m_last_result = INVALID_MSG;
           return false;

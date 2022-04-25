@@ -30,8 +30,8 @@ int main(int argc, char **argv) {
   Message send_msg(TAG_RLOGIN, username);
   conn.send(send_msg);
   Message ok_msg;
-  conn.receive(ok_msg);
-  if (!conn.receive(ok_msg)) {
+  bool res = conn.receive(ok_msg);
+  if (!res) {
   if (ok_msg.tag == TAG_ERR) { //how best to error check here?
       std::cout << ok_msg.data << "\n";
       conn.close();
@@ -48,12 +48,24 @@ int main(int argc, char **argv) {
 }
   Message msg;
   conn.send(Message(TAG_JOIN, room_name));
-  conn.receive(msg);
+  res = conn.receive(msg);
+  if (msg.tag == TAG_ERR) { //how best to error check here?                                  
+      std::cout << ok_msg.data << "\n";
+      conn.close();
+      return 1;
+    }
+
   while (1) {
   conn.receive(msg);
+  if (msg.tag == TAG_ERR) { //how best to error check here?                                  
+      std::cout << ok_msg.data << "\n";
+      conn.close();
+      return 1;
+    }
+
   std::cout << msg.tag;
-    if (msg.tag == TAG_SENDALL) {
-      msg.tag = TAG_DELIVERY;
+    if (msg.tag == TAG_DELIVERY) {
+      //msg.tag = TAG_DELIVERY;
       std::cout << msg.tag << ":" << room_name << ":" << username << ":" <<msg.data << "\n";
 //help with this 
     } else if (msg.tag == TAG_ERR) {

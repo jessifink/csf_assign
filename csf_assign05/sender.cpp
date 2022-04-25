@@ -29,8 +29,8 @@ int main(int argc, char **argv) {
 
   conn.send(Message(TAG_SLOGIN, username));
   Message ok_msg;
-  conn.receive(ok_msg);
-  if (!conn.receive(ok_msg)) {
+  bool res = conn.receive(ok_msg);
+  if (!res) {
     if (ok_msg.tag == TAG_ERR) {
       std::cout << ok_msg.data << "\n";
       conn.close();
@@ -46,12 +46,10 @@ int main(int argc, char **argv) {
       return 1;
     }*/
 
-}
+  }
 
   while (1) { 
    //getline()
-   //if call fails break out of function
-   //line = fgets(line, 4000, stdin)
    std::string str;
    getline(std::cin, str);
    std::string payload;
@@ -59,37 +57,37 @@ int main(int argc, char **argv) {
    std::stringstream ss;
    ss << str;
    ss >> command; 
-   std::cout << "red";
+   //std::cout << "red";
   if (command.compare("/join") == 0) {
     ss >> payload;
     conn.send(Message(TAG_JOIN, payload));
     conn.receive(ok_msg);
-    std::cout << "orange";
+    //std::cout << "orange";
     if (ok_msg.tag == TAG_ERR) {
-      std::cerr << payload << "\n";
+      std::cerr << payload  << "\n";
     }
   } else if (command.compare("/leave") == 0) {
       conn.send(Message(TAG_LEAVE, ""));
       conn.receive(ok_msg);
-      std::cout << "yellow";
+      //std::cout << "yellow";
       if (ok_msg.tag == TAG_ERR) {
         std::cerr << payload << "\n";
       }
   } else if (command.compare("/quit") == 0) {
-      std::cout << "magenta";
+    //std::cout << "magenta";
       conn.send(Message(TAG_QUIT, ""));
-      std::cout << "maroon";
+      //std::cout << "maroon";
       conn.receive(ok_msg);
     if (ok_msg.tag == TAG_ERR) {
         std::cerr << payload << "\n";
       }
-      std::cout << "blue";
-      conn.close();
+    //std::cout << "blue";
+    //conn.close();
       return 0;
   } else { 
       conn.send(Message(TAG_SENDALL, str));
       conn.receive(ok_msg);
-            std::cout << "purple";
+      //std::cout << "purple";
 
       if (ok_msg.tag == TAG_ERR) {
         std::cerr << payload << "\n";

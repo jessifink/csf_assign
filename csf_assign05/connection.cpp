@@ -36,7 +36,7 @@ void Connection::connect(const std::string &hostname, int port) {
 Connection::~Connection() {
   // TODO: close the socket if it is open
   if (is_open()) {
-    close();
+    Close(m_fd);
   }
 }
 
@@ -49,7 +49,7 @@ bool Connection::is_open() const {
 
 void Connection::close() {
     if (is_open()) {
-    close();
+    Close(m_fd);
   }
 }
 

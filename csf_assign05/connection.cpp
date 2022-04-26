@@ -83,31 +83,33 @@ bool Connection::receive(Message &msg) {
       //std::cerr << "ERROR";
       return false;
     }
-    std::string string = str;
-    std::string result;
+        std::string  result = str;
 
-
-    int index = 0; 
-    for (int i = 0; i == string.length(); i++) {
-      if (string[i] == ':') {
-        msg.tag = string.substr(index, i);
-        index = i + 1;
-
-        if (checkTagError(msg.tag.c_str()) == true) {
-          std::cerr << "Error: Tag not found";
-          m_last_result = INVALID_MSG;
-          return false;
-        }
+    if (result[result.length()-1] == '\n') {
+    result.erase(result.length()-1);
+    // std::cout << "oanda";
+}
+    
+    //    std::cout <<"red" +  string;
+    int index = 0;
+    std::size_t colon = result.find(":");
+    //    std::cout << "hello        " + result.length();
+    if (colon != std::string::npos) {
+  msg.tag = result.substr(0,colon);                                                                                                                                                                       
+    // std::cout << "pirple : " + msg.tag;                                                                                                                                                                 
+    msg.data = result.substr(colon + 1);//, (string.length() - colon -2));                                                                                                                                 
+    //     std::cout << "oragne:  " + msg.data + "\n";                                                                                                                                                          //    std::cout << "infinite loop";                                                                                                                                                                     
+    m_last_result = SUCCESS;                                                                                                                                                                                
+    //  return true;
+    } else {
+      if ( result.length() > 2) {
+	//	std::cout << "mango";
+	std::cerr << "Error: invalid message format";
+     m_last_result = INVALID_MSG;
+     return false;
       }
-      if (index == 0) { //error no colon found
-        std::cerr << "Error: invalid message format";
-        m_last_result = INVALID_MSG;
-        return false;
-      }
-    }
-    msg.data = string.substr(index,string.length());
-    m_last_result = SUCCESS;
-    return true;
+     }
+    return true;   
 }
 
 bool Connection::checkTagError(const char * toFind) { //returns true if error, false if not
@@ -122,4 +124,3 @@ bool Connection::checkTagError(const char * toFind) { //returns true if error, f
   }
   return false;
 }
-

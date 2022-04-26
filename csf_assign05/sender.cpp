@@ -29,10 +29,11 @@ int main(int argc, char **argv) {
 
   conn.send(Message(TAG_SLOGIN, username));
   Message ok_msg;
-  bool res = conn.receive(ok_msg);
-    if (ok_msg.tag == TAG_ERR) {
-      std::cout << ok_msg.data << "\n";
-      conn.close();
+  conn.receive(ok_msg);
+  if (ok_msg.tag == TAG_ERR) {
+      std::cerr << ok_msg.data << "\n";
+      // conn.close();
+      //      return 1;
       return 1;
     }
 
@@ -76,6 +77,7 @@ int main(int argc, char **argv) {
       conn.send(Message(TAG_QUIT, ""));
       //std::cout << "maroon";
       conn.receive(ok_msg);
+      //      conn.close();
     if (ok_msg.tag == TAG_ERR) {
         std::cerr << "bye" << "\n";
       }

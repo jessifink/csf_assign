@@ -25,7 +25,7 @@ void MessageQueue::enqueue(Message *msg) {
 // bq->data[bq->head] = item;
 //  m_messages.emplace_front(msg);
 // m_messages.front = m_messages.front+1 % m_messages.max_size; //how to 
- pthread_mutex_unlock(&m_lock);
+ //pthread_mutex_unlock(&m_lock);
   sem_post(&m_avail);
 
   // TODO: put the specified message on the queue
@@ -53,9 +53,10 @@ Message *MessageQueue::dequeue() {
   } else {
     pthread_mutex_lock(&m_lock);
     //this is copied from the slides 
+   void * item = m_messages.
     // void *item = m_messages->data[m_messages->tail];
 // m_messages->tail = (m_messages->tail + 1) % m_messages->max_items;
-    pthread_mutex_unlock(&m_lock);
+    //pthread_mutex_unlock(&m_lock);
 
 // remove message from queue
 //     return msg

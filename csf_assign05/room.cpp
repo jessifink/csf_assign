@@ -19,8 +19,6 @@ Room::~Room() {
 }
 
 void Room::add_member(User *user) {
-
-
   Guard g(lock); //idk if this is right/enough to lock 
   members.insert(user); 
 
@@ -34,11 +32,21 @@ void Room::remove_member(User *user) {
   // TODO: remove User from the room
 }
 
+
 void Room::broadcast_message(const std::string &sender_username, const std::string &message_text) {
   Guard g(lock); 
-  for (int i = 0; i < members.size(); i++ ) {
+  std::set<User *> :: iterator it;
+  Message msg;
+  msg.data = message_text;
+  msg.tag = TAG_DELIVERY; // i think ? is it always this 
+  for (it = members.begin(); it != members.end(); it++) {
+    (*it)->mqueue.enqueue(&msg);
     //send message to every receiver
   }
   //iterate through all users in a room and pushes a message into every messageQueue
   // TODO: send a message to every (receiver) User in the room
 }
+
+  //iterate through all users in a room and pushes a message into every messageQueue
+  // TODO: send a message to every (receiver) User in the room
+

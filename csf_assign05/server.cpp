@@ -38,7 +38,7 @@ namespace {
 
 void *worker(void *arg) {
   pthread_detach(pthread_self());
-  ConnInfo *info_ = static_cast<ConnInfo *>(arg);
+  ConnInfo * info_ = static_cast<ConnInfo *>(arg);
     // use a std::unique_ptr to automatically destroy the ConnInfo object
   // when the worker function finishes; this will automatically ensure
   // that the Connection object is destroyed
@@ -74,8 +74,13 @@ void *worker(void *arg) {
       }
       break;
     } else {
+      std::string room_name = "";
       if (slogin) {
-        //chat_with_sender(msg, info, );
+        room_name = chat_with_sender(msg, info_, username, room_name);
+        if (room_name.compare("quit") == 0) {
+          //SENDER QUITS PROGRAM SOMEHOW IDK IF RIGHT
+          break;
+        }
       } else {
         //chat_with_reciever(msg);
       }
@@ -90,22 +95,34 @@ void *worker(void *arg) {
   return nullptr;
 }
 
-}
-void chat_with_sender(Message msg, ConnInfo *info, std::string username) {
-  std::string room_name;
-  Room *room;
+//}
+
+std::string chat_with_sender(Message msg, ConnInfo * info, std::string username, std::string room_name) {
+  //std::string room_name;
+  //how to initialize room
+  Room r(room_name);
+  Room * room = &r;
+  
   if (msg.tag == TAG_JOIN) {
     room_name = msg.data; 
     room = info->server->find_or_create_room(room_name);
   } else if (msg.tag == TAG_SENDALL) {
-    //Room room;
-    room->broadcast_message(username, msg.data);
+    if (room_name.compare("") == 0) {
+      std::cerr << "Error: Sender not in room"; //DONT KNOW IF THIS ERROR SHOULD BE HANDLED IN SERVER?
+    } else {
+      room->broadcast_message(username, msg.data);
+    }
   } else if (msg.tag == TAG_LEAVE) {
-    //
+    room_name = "";
+  } else if (msg.tag == TAG_QUIT) {
+    room_name = "quit";
+    return room_name;
+  
+  } else {
+    info->conn->send(Message(TAG_ERR, "invalid tag"));
+  }
 
-} else if (msg.tag == TAG_QUIT) {
-
-}
+  return room_name;
 }
 
 void chat_with_receiver(Message msg, ConnInfo *info, std::string username) {
@@ -118,7 +135,10 @@ void chat_with_receiver(Message msg, ConnInfo *info, std::string username) {
     room = info->server->find_or_create_room(room_name);
     room->add_member(user);
   } else if (msg.tag == TAG_DELIVERY) {
-    //?????
+    //room->broadcast_message(HOW TO GET SENDER USERNAME msg.data);
+    //for every member/user in room push to messagequeue
+    //send back delivery:[room]:[sender]:[message]
+    
   }
 }
   //recieve(join)
@@ -211,4 +231,5 @@ Room *Server::find_or_create_room(const std::string &room_name) {
   }
 
   return room;
+  }
 }

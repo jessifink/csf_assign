@@ -32,7 +32,7 @@ void Room::remove_member(User *user) {
   // TODO: remove User from the room
 }
 
-
+//
 void Room::broadcast_message(const std::string &sender_username, const std::string &message_text) {
   Guard g(lock); 
   std::set<User *> :: iterator it;

@@ -43,7 +43,6 @@ void *worker(void *arg) {
   // when the worker function finishes; this will automatically ensure
   // that the Connection object is destroyed
   std::unique_ptr<ConnInfo> info(info_);
-
   Message msg;
   if (!info->conn->receive(msg)) {
     if (info->conn->get_last_result() == Connection::INVALID_MSG) {
@@ -51,22 +50,28 @@ void *worker(void *arg) {
     }
     return nullptr;
   }
-
   if (msg.tag != TAG_SLOGIN && msg.tag != TAG_RLOGIN) {
     info->conn->send(Message(TAG_ERR, "first message should be slogin or rlogin"));
     return nullptr;
   }
 
+std::cerr << "bluebery :           " + msg.tag;  
   std::string username = msg.data;
-  if (!info->conn->send(Message(TAG_OK, "welcome " + username))) {
+std::cerr << "pear :           " + username;  
+if (!info->conn->send(Message(TAG_OK, "welcome " + username))) {
+    std::cerr << "apple";
     return nullptr;
   }
   bool slogin = false;
   if (msg.tag == TAG_SLOGIN) {
+    std::cerr << "apple :           " + msg.data;
     slogin = true;
   } 
 
   // Just loop reading messages and sending an ok response for each one
+   std::string room_name = "";
+  // Room r(room_name);
+  // Room * room = &r;
   while (true) {
     if (!info->conn->receive(msg)) {
       if (info->conn->get_last_result() == Connection::INVALID_MSG) {
@@ -74,87 +79,83 @@ void *worker(void *arg) {
       }
       break;
     } else {
-      std::string room_name = "";
       if (slogin) {
-        room_name = info->server->chat_with_sender(msg, info_, username, room_name);
+        room_name = info->server->chat_with_sender(info->conn, info->server, msg, username);
         if (room_name.compare("quit") == 0) {
           //SENDER QUITS PROGRAM SOMEHOW IDK IF RIGHT
           break;
         }
       } else {
-        info->server->chat_with_receiver(msg,  info_, username);
+        info->server->chat_with_receiver(info->conn, info->server, msg, username);
       }
       
     }
-
-    if (!info->conn->send(Message(TAG_OK, "this is just a dummy response"))) {
-      break;
     }
-  }
-
   return nullptr;
 }
-
-//}
-
-
-
 }
+
+
 
 ////////////////////////////////////////////////////////////////////////
 // Server member function implementation
 ////////////////////////////////////////////////////////////////////////
-std::string Server::chat_with_sender(Message msg, ConnInfo *  info, std::string username, std::string room_name) {
-  //std::string room_name;
-  //how to initialize room
+std::string Server::chat_with_sender(Connection *conn, Server *server, Message msg, std::string username) {
+  std::string room_name = "";
   Room r(room_name);
   Room * room = &r;
-  
+ while(true) {
+  conn->receive(msg); 
+  std::cerr << "orange :           " + msg.tag;
   if (msg.tag == TAG_JOIN) { 
-    room_name = msg.data; 
-    room = info->server->find_or_create_room(room_name);
-  } else if (msg.tag == TAG_SENDALL) {
-    if (room_name.compare("") == 0) {
-      std::cerr << "Error: Sender not in room"; //DONT KNOW IF THIS ERROR SHOULD BE HANDLED IN SERVER?
-    } else {
-      room->broadcast_message(username, msg.data);
-    }
-  } else if (msg.tag == TAG_LEAVE) {
-    room_name = "";
-  } else if (msg.tag == TAG_QUIT) {
-    room_name = "quit";
-    return room_name;
-  
-  } else {
-    info->conn->send(Message(TAG_ERR, "invalid tag"));
-  }
 
+    room = server->find_or_create_room(msg.data);
+          // room->add_member(username);
+          // conn->send(TAG_OK, "ok");
+    } else if (msg.tag == TAG_SENDALL) {
+      std::cerr << "banana :           " + msg.data;
+      if (room->get_room_name().compare(nullptr)) {
+        std::cerr << "Error: Sender not in room"; //DONT KNOW IF THIS ERROR SHOULD BE HANDLED IN SERVER?
+      } else {
+      room->broadcast_message(username, msg.data);
+      conn->send(Message(TAG_OK, "ok"));
+      }
+    } else if (msg.tag == TAG_LEAVE) {
+      room_name = "";
+    } else if (msg.tag == TAG_QUIT) {
+      room_name = "quit";
+    } else {
+      conn->send(Message(TAG_ERR, "invalid tag"));
+    }
+  }
   return room_name;
 }
 
-void Server::chat_with_receiver(Message msg, ConnInfo * info, std::string username) { //shoudl this be in chat_with_receiver
-  User *user;
-  user->username = username;
-  std::string room_name;
+void Server::chat_with_receiver(Connection *conn, Server *server, Message msg, std::string username) { //shoudl this be in chat_with_receiver
+ User *user = new User (msg.data);
+
+  std::string room_name = "";
   Room *room;
+
   if (msg.tag == TAG_JOIN) {
     room_name = msg.data; 
-    room = info->server->find_or_create_room(room_name);
+    std::cerr << "kiwi :           " + msg.data;
+    room = server->find_or_create_room(room_name);
     room->add_member(user);
   }
   while (true) {
-    if (user->mqueue.dequeue()) {
-      msg.tag = TAG_DELIVERY;
-      info->conn->send(msg);
+    Message *msg = user->mqueue.dequeue(); 
+    if (msg != NULL) {
+      std::cerr << "plum";
+      conn->send(Message(TAG_DELIVERY, (*msg).data));
       delete &msg;
     } else {
       break;
     }
-    
   }
   room->remove_member(user);
-    
-  }
+}
+
 Server::Server(int port)
   : m_port(port)
   , m_ssock(-1) {

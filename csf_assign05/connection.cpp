@@ -80,34 +80,24 @@ bool Connection::receive(Message &msg) {
     int n = Rio_readlineb(&m_fdbuf, str, msg.MAX_LEN);
     if (n < 0) {
       m_last_result = EOF_OR_ERROR;
-      //std::cerr << "ERROR";
       return false;
     }
-        std::string  result = str;
-
+    std::string  result = str;
     if (result[result.length()-1] == '\n') {
     result.erase(result.length()-1);
-    // std::cout << "oanda";
 }
-    
-    //    std::cout <<"red" +  string;
     int index = 0;
     std::size_t colon = result.find(":");
-    //    std::cout << "hello        " + result.length();
     if (colon != std::string::npos) {
-  msg.tag = result.substr(0,colon);                                                                                                                                                                       
-    // std::cout << "pirple : " + msg.tag;                                                                                                                                                                 
-    msg.data = result.substr(colon + 1);//, (string.length() - colon -2));                                                                                                                                 
-    //     std::cout << "oragne:  " + msg.data + "\n";                                                                                                                                                          //    std::cout << "infinite loop";                                                                                                                                                                     
-    m_last_result = SUCCESS;                                                                                                                                                                                
-    //  return true;
+      msg.tag = result.substr(0,colon);                                                                                                                                                                       
+      msg.data = result.substr(colon + 1);//, (string.length() - colon -2));                                                                                                                                 
+      m_last_result = SUCCESS;                                                                                                                                                                                
     } else {
-      if ( result.length() > 2) {
-	//	std::cout << "mango";
-	std::cerr << "Error: invalid message format";
+     // if ( result.length() > 2) {
+	   std::cerr << "Error: invalid message format";
      m_last_result = INVALID_MSG;
      return false;
-      }
+      //}
      }
     return true;   
 }

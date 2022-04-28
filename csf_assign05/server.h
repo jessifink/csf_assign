@@ -16,6 +16,8 @@ public:
   void handle_client_requests();
 
   Room *find_or_create_room(const std::string &room_name);
+  std::string chat_with_sender(Message msg, ConnInfo * info , std::string username, std::string room_name);
+  void chat_with_receiver(Message msg, ConnInfo * info, std::string username);
 
 private:
   // prohibit value semantics

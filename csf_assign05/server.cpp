@@ -76,13 +76,13 @@ void *worker(void *arg) {
     } else {
       std::string room_name = "";
       if (slogin) {
-        room_name = chat_with_sender(msg, info_, username, room_name);
+        room_name = info->server->chat_with_sender(msg, info_, username, room_name);
         if (room_name.compare("quit") == 0) {
           //SENDER QUITS PROGRAM SOMEHOW IDK IF RIGHT
           break;
         }
       } else {
-        //chat_with_reciever(msg);
+        info->server->chat_with_receiver(msg,  info_, username);
       }
       
     }
@@ -97,13 +97,20 @@ void *worker(void *arg) {
 
 //}
 
-std::string chat_with_sender(Message msg, ConnInfo * info, std::string username, std::string room_name) {
+
+
+}
+
+////////////////////////////////////////////////////////////////////////
+// Server member function implementation
+////////////////////////////////////////////////////////////////////////
+std::string Server::chat_with_sender(Message msg, ConnInfo *  info, std::string username, std::string room_name) {
   //std::string room_name;
   //how to initialize room
   Room r(room_name);
   Room * room = &r;
   
-  if (msg.tag == TAG_JOIN) {
+  if (msg.tag == TAG_JOIN) { 
     room_name = msg.data; 
     room = info->server->find_or_create_room(room_name);
   } else if (msg.tag == TAG_SENDALL) {
@@ -125,7 +132,7 @@ std::string chat_with_sender(Message msg, ConnInfo * info, std::string username,
   return room_name;
 }
 
-void chat_with_receiver(Message msg, ConnInfo *info, std::string username) {
+void Server::chat_with_receiver(Message msg, ConnInfo * info, std::string username) { //shoudl this be in chat_with_receiver
   User *user;
   user->username = username;
   std::string room_name;
@@ -134,54 +141,20 @@ void chat_with_receiver(Message msg, ConnInfo *info, std::string username) {
     room_name = msg.data; 
     room = info->server->find_or_create_room(room_name);
     room->add_member(user);
-  } else if (msg.tag == TAG_DELIVERY) {
-    //room->broadcast_message(HOW TO GET SENDER USERNAME msg.data);
-    //for every member/user in room push to messagequeue
-    //send back delivery:[room]:[sender]:[message]
+  }
+  while (true) {
+    if (user->mqueue.dequeue()) {
+      msg.tag = TAG_DELIVERY;
+      info->conn->send(msg);
+      delete &msg;
+    } else {
+      break;
+    }
     
   }
-}
-  //recieve(join)
-//  register receiver to room
-  //send(ok)
-  //send delivery room sender message 
-  //you must terminate the loop and tear down the client thread if any message transmission fails, or if a valid quit message is received.
-
-/*chat_with_sender() {
-  //remember: For example, if Alice sends a message, 
-  //all receivers logged in as Alice must not receive that message.
-  you must terminate the loop and tear down the client thread if any message fails to send, 
-  //as there is no other way to detect a client disconnect.
-  conn.receive(join)
-  
-  //recieve join
-  register sender to room
-  //send ok
-  //recive sendall
-  synch and broadcast message
-  //send ok
-  recieve leave
-  deregister from room 
-  send ok
-  recieve quit 
-  destory connection data 
-  send ok
-
-}
-*/
-/*chat_with_reciever() {
-  //recieve(join)
-  register receiver to room
-  //send(ok)
-  //send delivery room sender message 
-  //you must terminate the loop and tear down the client thread if any message transmission fails, or if a valid quit message is received.
-
-}
-*/
-////////////////////////////////////////////////////////////////////////
-// Server member function implementation
-////////////////////////////////////////////////////////////////////////
-
+  room->remove_member(user);
+    
+  }
 Server::Server(int port)
   : m_port(port)
   , m_ssock(-1) {
@@ -232,4 +205,3 @@ Room *Server::find_or_create_room(const std::string &room_name) {
 
   return room;
   }
-}

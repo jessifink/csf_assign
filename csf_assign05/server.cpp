@@ -110,20 +110,24 @@ std::string Server::chat_with_sender(Connection *conn, Server *server, Message m
   if (msg.tag == TAG_JOIN) { 
 
     room = server->find_or_create_room(msg.data);
+    room_name = room->get_room_name();
     conn->send(Message(TAG_OK, "ok"));
     } else if (msg.tag == TAG_SENDALL) {
-      //std::cerr << "banana :           " + msg.data;
-      // if (room->get_room_name().compare(nullptr)) {
-      //   std::cerr << "Error: Sender not in room"; //DONT KNOW IF THIS ERROR SHOULD BE HANDLED IN SERVER?
-      // } else {
+      if(room_name.compare("") == 0) {
+        conn->send(Message(TAG_ERR, "not in room"));
+      } else {
       room->broadcast_message(username, msg.data);
       conn->send(Message(TAG_OK, "ok"));
-     // }
+      }
     } else if (msg.tag == TAG_LEAVE) {
-      conn->send(Message(TAG_LEAVE, "leave"));
+      if(room_name.compare("") == 0) {
+        conn->send(Message(TAG_ERR, "not in room"));
+      } else {
+      conn->send(Message(TAG_OK, "leave"));
       room_name = "";
+      }
     } else if (msg.tag == TAG_QUIT) {
-      conn->send(Message(TAG_QUIT, "quit"));
+      conn->send(Message(TAG_OK, "quit"));
       room_name = "quit";
       break;
     } else {
@@ -139,7 +143,6 @@ void Server::chat_with_receiver(Connection *conn, Server *server, Message msg, s
 
   std::string room_name = "";
   Room *room;
-//if invalid return out 
   if (msg.tag == TAG_JOIN) {
     room_name = msg.data; 
     conn->send(Message(TAG_OK, "ok"));
@@ -150,15 +153,8 @@ void Server::chat_with_receiver(Connection *conn, Server *server, Message msg, s
   while (true) {
     msg2 = user.mqueue.dequeue(); 
     conn->send(*msg2);
-   /*if (!conn->send(*msg2)) {
-      delete msg2;
-      break;
-    } else {
-      delete msg2;
-    }*/
   }
   room->remove_member(&user);
- 
 }
 
 Server::Server(int port)

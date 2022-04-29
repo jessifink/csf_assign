@@ -4,7 +4,3 @@ alice: each alternating line of messages...
 bob: will be send by a different client...
 alice: this test ensures that clients are served in order
 bob: and that one client may not monopolize the entire transmission
-bob: and that one client may not monopolize the entire transmission
-bob: and that one client may not monopolize the entire transmission
-bob: and that one client may not monopolize the entire transmission
-bob: and that one client may not monopolize the entire transmission

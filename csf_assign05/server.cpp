@@ -149,12 +149,13 @@ void Server::chat_with_receiver(Connection *conn, Server *server, Message msg, s
   Message *msg2;
   while (true) {
     msg2 = user.mqueue.dequeue(); 
-    if (!conn->send(*msg2)) {
+    conn->send(*msg2);
+   /*if (!conn->send(*msg2)) {
       delete msg2;
       break;
     } else {
       delete msg2;
-    }
+    }*/
   }
   room->remove_member(&user);
  

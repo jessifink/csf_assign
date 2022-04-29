@@ -24,14 +24,17 @@ void MessageQueue::enqueue(Message *msg) {
 }
 
 Message *MessageQueue::dequeue() {
+  //Guard g (m_lock);
+  
   Message *msg = nullptr;
   sem_wait(&m_avail);
-  Guard g (m_lock);
+  pthread_mutex_lock(&m_lock);
   
 
   if(!m_messages.empty()) {
     msg = m_messages.front();
     m_messages.pop_front();
   }
+  pthread_mutex_unlock(&m_lock);
   return msg;
 }

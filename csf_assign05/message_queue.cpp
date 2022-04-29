@@ -17,28 +17,21 @@ MessageQueue::~MessageQueue() {
 }
 
 void MessageQueue::enqueue(Message *msg) {
-  Guard g (m_lock);
+  pthread_mutex_lock(&m_lock);
   m_messages.push_back(msg);
+  pthread_mutex_unlock(&m_lock);
   sem_post(&m_avail);
 }
 
 Message *MessageQueue::dequeue() {
-  struct timespec ts;
+  Message *msg = nullptr;
+  sem_wait(&m_avail);
+  Guard g (m_lock);
   
-  // get the current time using clock_gettime:
-  // we don't check the return value because the only reason
-  // this call would fail is if we specify a clock that doesn't
-  // exist
-  clock_gettime(CLOCK_REALTIME, &ts);
 
-  // compute a time one second in the future
-  ts.tv_sec += 1;
-    Message *msg = nullptr;
-
-  if (sem_timedwait(&m_avail, &ts) == 0) {
-    Message *return_msg = m_messages.back();
-    m_messages.pop_back();
-    return return_msg;
+  if(!m_messages.empty()) {
+    msg = m_messages.front();
+    m_messages.pop_front();
   }
   return msg;
 }

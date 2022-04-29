@@ -49,22 +49,18 @@ void *worker(void *arg) {
       info->conn->send(Message(TAG_ERR, "invalid message"));
     }
     return nullptr;
+    
   }
   if (msg.tag != TAG_SLOGIN && msg.tag != TAG_RLOGIN) {
     info->conn->send(Message(TAG_ERR, "first message should be slogin or rlogin"));
     return nullptr;
   }
-
-std::cerr << "bluebery :           " + msg.tag;  
   std::string username = msg.data;
-std::cerr << "pear :           " + username;  
 if (!info->conn->send(Message(TAG_OK, "welcome " + username))) {
-    std::cerr << "apple";
     return nullptr;
   }
   bool slogin = false;
   if (msg.tag == TAG_SLOGIN) {
-    std::cerr << "apple :           " + msg.data;
     slogin = true;
   } 
 
@@ -73,17 +69,23 @@ if (!info->conn->send(Message(TAG_OK, "welcome " + username))) {
   // Room r(room_name);
   // Room * room = &r;
   while (true) {
+    
     if (!info->conn->receive(msg)) {
+      
       if (info->conn->get_last_result() == Connection::INVALID_MSG) {
         info->conn->send(Message(TAG_ERR, "invalid message"));
       }
       break;
     } else {
+      //std::cerr << "mandarin";
       if (slogin) {
+        //std::cerr << "enters slogin 87";
         room_name = info->server->chat_with_sender(info->conn, info->server, msg, username);
+        //std::cerr << "ROOM NAME IS" << room_name;
         if (room_name.compare("quit") == 0) {
           //SENDER QUITS PROGRAM SOMEHOW IDK IF RIGHT
-          break;
+        
+          return nullptr;
         }
       } else {
         info->server->chat_with_receiver(info->conn, info->server, msg, username);
@@ -101,59 +103,61 @@ if (!info->conn->send(Message(TAG_OK, "welcome " + username))) {
 // Server member function implementation
 ////////////////////////////////////////////////////////////////////////
 std::string Server::chat_with_sender(Connection *conn, Server *server, Message msg, std::string username) {
+  //std::cerr << "tomato";
   std::string room_name = "";
-  Room r(room_name);
-  Room * room = &r;
+  Room * room;
  while(true) {
-  conn->receive(msg); 
-  std::cerr << "orange :           " + msg.tag;
   if (msg.tag == TAG_JOIN) { 
 
     room = server->find_or_create_room(msg.data);
-          // room->add_member(username);
-          // conn->send(TAG_OK, "ok");
+    conn->send(Message(TAG_OK, "ok"));
     } else if (msg.tag == TAG_SENDALL) {
-      std::cerr << "banana :           " + msg.data;
-      if (room->get_room_name().compare(nullptr)) {
-        std::cerr << "Error: Sender not in room"; //DONT KNOW IF THIS ERROR SHOULD BE HANDLED IN SERVER?
-      } else {
+      //std::cerr << "banana :           " + msg.data;
+      // if (room->get_room_name().compare(nullptr)) {
+      //   std::cerr << "Error: Sender not in room"; //DONT KNOW IF THIS ERROR SHOULD BE HANDLED IN SERVER?
+      // } else {
       room->broadcast_message(username, msg.data);
       conn->send(Message(TAG_OK, "ok"));
-      }
+     // }
     } else if (msg.tag == TAG_LEAVE) {
+      conn->send(Message(TAG_LEAVE, "leave"));
       room_name = "";
     } else if (msg.tag == TAG_QUIT) {
+      conn->send(Message(TAG_QUIT, "quit"));
       room_name = "quit";
+      break;
     } else {
       conn->send(Message(TAG_ERR, "invalid tag"));
     }
+    conn->receive(msg); 
   }
   return room_name;
 }
 
 void Server::chat_with_receiver(Connection *conn, Server *server, Message msg, std::string username) { //shoudl this be in chat_with_receiver
- User *user = new User (msg.data);
+ User user (msg.data);
 
   std::string room_name = "";
   Room *room;
-
+//if invalid return out 
   if (msg.tag == TAG_JOIN) {
     room_name = msg.data; 
-    std::cerr << "kiwi :           " + msg.data;
+    conn->send(Message(TAG_OK, "ok"));
     room = server->find_or_create_room(room_name);
-    room->add_member(user);
+    room->add_member(&user);
   }
+  Message *msg2;
   while (true) {
-    Message *msg = user->mqueue.dequeue(); 
-    if (msg != NULL) {
-      std::cerr << "plum";
-      conn->send(Message(TAG_DELIVERY, (*msg).data));
-      delete &msg;
-    } else {
+    msg2 = user.mqueue.dequeue(); 
+    if (!conn->send(*msg2)) {
+      delete msg2;
       break;
+    } else {
+      delete msg2;
     }
   }
-  room->remove_member(user);
+  room->remove_member(&user);
+ 
 }
 
 Server::Server(int port)
@@ -204,5 +208,6 @@ Room *Server::find_or_create_room(const std::string &room_name) {
     room = i->second;
   }
 
+  //std::cerr << "fruit salad";
   return room;
   }

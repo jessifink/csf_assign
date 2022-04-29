@@ -79,26 +79,39 @@ bool Connection::receive(Message &msg) {
     char str[msg.MAX_LEN];
     int n = Rio_readlineb(&m_fdbuf, str, msg.MAX_LEN);
     if (n < 0) {
+      //std::cerr << "guava";
       m_last_result = EOF_OR_ERROR;
       return false;
     }
+
     std::string  result = str;
+    //std::cerr << "TEST RESULT LENGTH" << result.length();
     if (result[result.length()-1] == '\n') {
     result.erase(result.length()-1);
-}
+    //std::cerr << "raspberry";
+    }
+
     int index = 0;
     std::size_t colon = result.find(":");
+    //std::cerr << colon;
+    //std::cerr << "TEST RESULT" << result << "COLON VALUE: " << colon; //this is a problem colon value is massive
     if (colon != std::string::npos) {
       msg.tag = result.substr(0,colon);                                                                                                                                                                       
       msg.data = result.substr(colon + 1);//, (string.length() - colon -2));                                                                                                                                 
-      m_last_result = SUCCESS;                                                                                                                                                                                
-    } else {
-     // if ( result.length() > 2) {
+      m_last_result = SUCCESS; 
+      //std::cerr << "grapefruit";                                                                                                                                                                               
+    } /*else {
+     if ( result.length() > 2) {
+      //std::cerr;
 	   std::cerr << "Error: invalid message format";
      m_last_result = INVALID_MSG;
+     //std::cerr << "potato";   
      return false;
-      //}
+      //} }
      }
+     
+     }*/
+     //std::cerr << "spinach";   
     return true;   
 }
 

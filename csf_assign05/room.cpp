@@ -34,15 +34,26 @@ void Room::remove_member(User *user) {
 
 //
 void Room::broadcast_message(const std::string &sender_username, const std::string &message_text) {
-  Guard g(lock); 
-  std::set<User *> :: iterator it;
-  Message msg;
-  msg.data = message_text;
-  msg.tag = TAG_DELIVERY; // i think ? is it always this 
-  for (it = members.begin(); it != members.end(); it++) {
-    (*it)->mqueue.enqueue(&msg);
-    //send message to every receiver
+  Guard g(lock);
+  //pthread_mutex_lock(&lock);
+  //std::set<User *> :: iterator it;
+  std::string msg = TAG_DELIVERY + ':' + room_name + ':' + sender_username + ':' + message_text;
+  Message * delivered = new Message(TAG_DELIVERY, msg);
+  
+ // i think ? is it always this 
+  for (User * user : members) {
+      //pthread_mutex_unlock(&lock);
+      if (user->username.compare(sender_username) != 0) {
+        user->mqueue.enqueue(delivered);
+      }
+    
   }
+  /*
+  for (it = members.begin(); it != members.end(); it++) {
+    pthread_mutex_unlock(&lock);
+    (*it)->mqueue.enqueue(delivered);
+    //send message to every receiver
+  }*/
   //iterate through all users in a room and pushes a message into every messageQueue
   // TODO: send a message to every (receiver) User in the room
 }
